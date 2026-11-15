@@ -1,0 +1,26 @@
+1 Broadcast: 192.168.0.79
+1 HostMax: 192.168.0.78
+1 HostMin: 192.168.0.65
+1 Hosts/Net: 14
+1 Netmask: 255.255.255.240 28
+1 Network: 192.168.0.64/28
+1 Requested 10
+2 Broadcast: 192.168.0.31
+2 HostMax: 192.168.0.30
+2 HostMin: 192.168.0.1
+2 Hosts/Net: 30
+2 Netmask: 255.255.255.224 27
+2 Network: 192.168.0.0/27
+2 Requested 20
+3 Broadcast: 192.168.0.63
+3 HostMax: 192.168.0.62
+3 HostMin: 192.168.0.33
+3 Hosts/Net: 30
+3 Netmask: 255.255.255.224 27
+3 Network: 192.168.0.32/27
+3 Requested 30
+Needed 80
+Unused 1 192.168.0.80/28
+Unused 2 192.168.0.96/27
+Unused 3 192.168.0.128/25
+Used 192.168.0.0/25

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/netip"
-	"os"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -147,14 +146,14 @@ func (lay *layout) bandColumns() int {
 }
 
 func outputColumns() int {
-	if env, ok := os.LookupEnv("COLUMNS"); ok {
+	if env, ok := env.Getenv("COLUMNS"); ok {
 		if v, ok := safeAtoi(env); ok && v > 0 {
 			return v
 		}
 	}
-	if isTTY(os.Stdout) {
+	if env.StdoutTTY && env.StdoutFile != nil {
 		var ws [4]uint16
-		_, _, e := syscall.Syscall(syscall.SYS_IOCTL, os.Stdout.Fd(), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&ws)))
+		_, _, e := syscall.Syscall(syscall.SYS_IOCTL, env.StdoutFile.Fd(), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&ws)))
 		if e == 0 && ws[1] > 0 {
 			return int(ws[1])
 		}

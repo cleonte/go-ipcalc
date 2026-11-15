@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 )
 
@@ -26,7 +26,9 @@ var formatNames = []string{"human", "shell", "json", "value"}
 
 // stdout is fully buffered and flushed on exit, like C stdio on a pipe, so
 // that diagnostics on stderr come first in merged output.
-var out = bufio.NewWriterSize(os.Stdout, 1<<20)
+var out *bufio.Writer
+
+func newOut(w io.Writer) *bufio.Writer { return bufio.NewWriterSize(w, 1<<20) }
 
 const (
 	jsonFirst = iota
@@ -39,7 +41,7 @@ func errorf(format string, a ...any) {
 	if beSilent {
 		return
 	}
-	fmt.Fprintf(os.Stderr, format, a...)
+	fmt.Fprintf(errOut, format, a...)
 }
 
 func colorPrintf(color, title, value string) {

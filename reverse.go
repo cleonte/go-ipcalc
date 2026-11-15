@@ -62,7 +62,13 @@ func calcReverseDNS6(ip [16]byte, prefix int) []string {
 	return names
 }
 
-func lookupHostname(a netip.Addr) (string, bool) {
+// the resolvers are variables so that tests can replace them
+var (
+	lookupHostname = resolveHostname
+	lookupIP       = resolveIP
+)
+
+func resolveHostname(a netip.Addr) (string, bool) {
 	names, err := net.DefaultResolver.LookupAddr(context.Background(), a.String())
 	if err != nil || len(names) == 0 {
 		return "", false
@@ -72,7 +78,7 @@ func lookupHostname(a netip.Addr) (string, bool) {
 
 // lookupIP returns the first address of the host in the given family
 // (0 for any), formatted as inet_ntop would.
-func lookupIP(host string, family int) (string, bool) {
+func resolveIP(host string, family int) (string, bool) {
 	addrs, err := net.DefaultResolver.LookupIPAddr(context.Background(), host)
 	if err != nil {
 		return "", false

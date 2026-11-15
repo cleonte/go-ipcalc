@@ -11,17 +11,36 @@ there is no libmaxminddb, no `dlopen` and no geo-less build. The database
 paths default to `/usr/share/GeoIP/GeoLite2-*.mmdb` and are overridden at build
 time, as in the C build: `-ldflags "-X main.countryDB=... -X main.cityDB=... -X main.asnDB=..."`.
 
+## Tests
+
+The tests are plain Go: `go test ./...`. They run the program in-process and
+need nothing else, not even a C compiler or Python.
+
+* `cases_gen_test.go` holds the 446 cases translated from the C project's
+  Meson test list (`tests/meson.build`); their expected outputs are the files
+  in `testdata/`. The few tests that were shell pipelines (random networks,
+  `jq` and `eval` checks, the Debian comparison, the `LD_PRELOAD` fakes) are
+  written as Go tests in `ipcalc_test.go`.
+* `geodb_test.go` writes the MaxMind test databases from
+  `testdata/geo-*.json` (a Go port of `mkmmdb.py`).
+* Name lookups are replaced by fakes, so no test depends on DNS.
+* `testdata/debian/` has the output of the Debian ipcalc for the
+  `--split-hosts` comparison, recorded once, so Perl is not needed.
+
 ```sh
-go build -o ipcalc-go .
-scripts/run-c-suite.sh /path/to/ipcalc   # runs the C project's meson suite on this binary
+go build -o ipcalc .
+go test ./...
 ```
 
-## Result against the C suite (geo enabled)
+`scripts/run-c-suite.sh` is an optional cross-check that runs the C project's
+own Meson suite against the Go binary (needs meson, ninja and libmaxminddb).
 
-All 475 tests pass (the three `GeoLibraryMissing*` tests need the C build's
-`dlopen` and do not exist for a build without runtime linking). Differential
-fuzzing against the C binaries (3000 info-mode, 1500 split, 2500 deaggregate,
-3000 compare, 3000 binary and 3000 geo cases) found no differences.
+## Result
+
+`go test ./...` passes (479 tests). The C suite (475 tests, geo enabled) also
+passes against the Go binaries, and differential fuzzing against the C
+binaries (info, split, deaggregate, compare, binary and geo, 16000 cases)
+found no differences.
 
 ## Known, intentional differences
 

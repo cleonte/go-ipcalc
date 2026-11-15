@@ -5,16 +5,12 @@ import (
 	"fmt"
 	"math/bits"
 	"net/netip"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
 const version = "1.2.0"
-
-// exit code for modes the prototype does not implement
-const exitUnimplemented = 99
 
 const (
 	appVersion = 1 << iota
@@ -140,18 +136,8 @@ var fieldSelectingOptions = map[int]uint{
 	optAddrspace: flagShowAddrspace,
 }
 
-func exit(code int) {
-	out.Flush()
-	os.Exit(code)
-}
-
-func unimplemented(what string) {
-	fmt.Fprintf(os.Stderr, "go-ipcalc: %s is not implemented in this prototype\n", what)
-	exit(exitUnimplemented)
-}
-
 func usage(verbose bool) {
-	e := func(s string) { fmt.Fprint(os.Stderr, s) }
+	e := func(s string) { fmt.Fprint(errOut, s) }
 	if verbose {
 		e(`Usage: ipcalc [OPTION...]
   -c, --check                     Validate IP address
@@ -393,13 +379,8 @@ func checkFormatForApp(format outputFormat, app int) bool {
 	return true
 }
 
-func isTTY(f *os.File) bool {
-	st, err := f.Stat()
-	return err == nil && st.Mode()&os.ModeCharDevice != 0
-}
-
 func suggestFormat(app int, selected uint) {
-	if beSilent || !isTTY(os.Stderr) {
+	if beSilent || !env.StderrTTY {
 		return
 	}
 	var option, replacement string
@@ -427,10 +408,10 @@ func suggestFormat(app int, selected uint) {
 	default:
 		return
 	}
-	fmt.Fprintf(os.Stderr, "ipcalc: hint: %s is deprecated; use %s\n", option, replacement)
+	fmt.Fprintf(errOut, "ipcalc: hint: %s is deprecated; use %s\n", option, replacement)
 }
 
-func main() {
+func realMain() {
 	var (
 		randomStr, hostname, ipStr, chptr, prefixStr string
 		haveRandom, haveIP, haveHost, haveChptr      bool
@@ -446,7 +427,7 @@ func main() {
 		userFlags                                    uint
 	)
 
-	g := newGetopt(os.Args[1:], "S:cr:i46abho:gmnpjsvd:", longOptions)
+	g := newGetopt(env.Args, "S:cr:i46abho:gmnpjsvd:", longOptions)
 	for {
 		r, ok := g.next()
 		if !ok {
@@ -737,8 +718,8 @@ func main() {
 		exit(compareNetworks(cmpOp, info, flags, cmpStr, userFlags))
 	}
 
-	_, noColor := os.LookupEnv("NO_COLOR")
-	if isTTY(os.Stdout) && !noColor {
+	_, noColor := env.Getenv("NO_COLOR")
+	if env.StdoutTTY && !noColor {
 		colors = true
 	}
 

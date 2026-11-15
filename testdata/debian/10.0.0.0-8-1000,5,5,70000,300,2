@@ -1,0 +1,62 @@
+1 Broadcast: 10.2.3.255
+1 HostMax: 10.2.3.254
+1 HostMin: 10.2.0.1
+1 Hosts/Net: 1022
+1 Netmask: 255.255.252.0 22
+1 Network: 10.2.0.0/22
+1 Requested 1000
+2 Broadcast: 10.2.6.7
+2 HostMax: 10.2.6.6
+2 HostMin: 10.2.6.1
+2 Hosts/Net: 6
+2 Netmask: 255.255.255.248 29
+2 Network: 10.2.6.0/29
+2 Requested 5
+3 Broadcast: 10.2.6.15
+3 HostMax: 10.2.6.14
+3 HostMin: 10.2.6.9
+3 Hosts/Net: 6
+3 Netmask: 255.255.255.248 29
+3 Network: 10.2.6.8/29
+3 Requested 5
+4 Broadcast: 10.1.255.255
+4 HostMax: 10.1.255.254
+4 HostMin: 10.0.0.1
+4 Hosts/Net: 131070
+4 Netmask: 255.254.0.0 15
+4 Network: 10.0.0.0/15
+4 Requested 70000
+5 Broadcast: 10.2.5.255
+5 HostMax: 10.2.5.254
+5 HostMin: 10.2.4.1
+5 Hosts/Net: 510
+5 Netmask: 255.255.254.0 23
+5 Network: 10.2.4.0/23
+5 Requested 300
+6 Broadcast: 10.2.6.19
+6 HostMax: 10.2.6.18
+6 HostMin: 10.2.6.17
+6 Hosts/Net: 2
+6 Netmask: 255.255.255.252 30
+6 Network: 10.2.6.16/30
+6 Requested 2
+Needed 132628
+Unused 1 10.2.6.20/30
+Unused 10 10.2.64.0/18
+Unused 11 10.2.128.0/17
+Unused 12 10.3.0.0/16
+Unused 13 10.4.0.0/14
+Unused 14 10.8.0.0/13
+Unused 15 10.16.0.0/12
+Unused 16 10.32.0.0/11
+Unused 17 10.64.0.0/10
+Unused 18 10.128.0.0/9
+Unused 2 10.2.6.24/29
+Unused 3 10.2.6.32/27
+Unused 4 10.2.6.64/26
+Unused 5 10.2.6.128/25
+Unused 6 10.2.7.0/24
+Unused 7 10.2.8.0/21
+Unused 8 10.2.16.0/20
+Unused 9 10.2.32.0/19
+Used 10.0.0.0/14

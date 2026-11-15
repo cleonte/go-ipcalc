@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 )
 
@@ -49,7 +48,7 @@ func (g *getopt) shortSpec(c byte) (found, hasArg bool) {
 
 func (g *getopt) warn(format string, a ...any) {
 	if g.opterr {
-		fmt.Fprintf(os.Stderr, "ipcalc: "+format+"\n", a...)
+		fmt.Fprintf(errOut, "ipcalc: "+format+"\n", a...)
 	}
 }
 
