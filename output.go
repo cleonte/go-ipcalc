@@ -158,6 +158,7 @@ const (
 const (
 	sectionNetwork = iota
 	sectionRange
+	sectionGeo
 )
 
 type outputField struct {
@@ -321,6 +322,10 @@ func showInfoFields(info *ipInfo, format outputFormat, randomized bool) {
 	if info.expandedNetwork != "" {
 		fullNetwork = fmt.Sprintf("%s/%d", info.expandedNetwork, info.prefix)
 	}
+	radius := ""
+	if info.geo.accuracyRadius != "" {
+		radius = info.geo.accuracyRadius + " km"
+	}
 	hosts := ""
 	if flags&flagIPv6 != 0 && info.prefix < 112 {
 		hosts = fmt.Sprintf("2^(%d) = %s", 128-info.prefix, info.hosts)
@@ -353,6 +358,18 @@ func showInfoFields(info *ipInfo, format outputFormat, randomized bool) {
 		{title: "HostMin:\t", name: "MINADDR", option: flagShowMinaddr, attrs: sumAll | hideSA, section: sectionRange, value: info.hostmin},
 		{title: "HostMax:\t", name: "MAXADDR", option: flagShowMaxaddr, attrs: sumAll | hideSA, section: sectionRange, value: info.hostmax},
 		{title: "Hosts/Net:\t", name: "ADDRESSES", option: flagShowAddresses, attrs: sumAll | hideSA | attrValueQuoteIfSpace, section: sectionRange, value: info.hosts, textValue: hosts},
+		{title: "Continent:\t", name: "CONTINENT", option: flagShowGeoIP, attrs: sumAll | attrHighlight | attrValueQuoteIfSpace, section: sectionGeo, value: info.geo.continent},
+		{title: "Country code:\t", name: "COUNTRYCODE", option: flagShowGeoIP, attrs: sumAll | attrHighlight, section: sectionGeo, value: info.geo.ccode},
+		{title: "Country:\t", name: "COUNTRY", option: flagShowGeoIP, attrs: sumAll | attrHighlight | attrValueQuoteIfSpace, section: sectionGeo, value: info.geo.country},
+		{title: "City:\t\t", name: "CITY", option: flagShowGeoIP, attrs: sumAll | attrHighlight | attrValueQuoteIfSpace, section: sectionGeo, value: info.geo.city},
+		{title: "Postal code:\t", name: "POSTALCODE", option: flagShowGeoIP, attrs: sumAll | attrHighlight | attrValueQuoteIfSpace, section: sectionGeo, value: info.geo.postalCode},
+		{title: "Coordinates:\t", name: "COORDINATES", option: flagShowGeoIP, attrs: sumAll | attrHighlight | attrVarQuoteAlways, section: sectionGeo, value: info.geo.coord},
+		{title: "Accuracy:\t", name: "ACCURACYRADIUS", option: flagShowGeoIP, attrs: sumAll | attrHighlight, section: sectionGeo, value: info.geo.accuracyRadius, textValue: radius},
+		{title: "Time zone:\t", name: "TIMEZONE", option: flagShowGeoIP, attrs: sumAll | attrHighlight, section: sectionGeo, value: info.geo.timeZone},
+		{title: "Routed by AS:\t", name: "ASN", option: flagShowGeoIP, attrs: sumAll | attrHighlight, section: sectionGeo, value: info.geo.asn},
+		{title: "Operated by:\t", name: "ASORG", option: flagShowGeoIP, attrs: sumAll | attrHighlight | attrValueQuoteIfSpace, section: sectionGeo, value: info.geo.asOrg},
+		{title: "AS network:\t", name: "ASNETWORK", option: flagShowGeoIP, attrs: sumAll | attrHighlight, section: sectionGeo, value: info.geo.asNetwork},
+		{title: "Geo network:\t", name: "GEONETWORK", option: flagShowGeoIP, attrs: sumAll | attrHighlight, section: sectionGeo, value: info.geo.network},
 	}
 
 	for i := range fields {
@@ -373,7 +390,7 @@ func showInfoFields(info *ipInfo, format outputFormat, randomized bool) {
 			continue
 		}
 		if humanSummary && f.section != section {
-			if !single {
+			if f.section == sectionGeo || !single {
 				outputSeparate()
 			}
 			section = f.section

@@ -40,8 +40,8 @@ const (
 	flagShowMaxaddr
 	flagShowAddresses
 	flagShowAddrspace
-	_ // geo
-	_
+	flagGetGeoIP
+	flagShowGeoIPBit
 	flagShowAllInfo
 	flagShowReverse
 	flagAssumeClassPrefix
@@ -52,6 +52,8 @@ const (
 	flagRandom
 	flagShowWildcard
 )
+
+const flagShowGeoIP = flagShowGeoIPBit | flagGetGeoIP
 
 const (
 	optAllInfo = 1 + iota
@@ -99,6 +101,7 @@ var longOptions = []longOpt{
 	{"broadcast", false, 'b'},
 	{"hostname", false, 'h'},
 	{"lookup-host", true, 'o'},
+	{"geoinfo", false, 'g'},
 	{"reverse-dns", false, optReverse},
 	{"netmask", false, 'm'},
 	{"network", false, 'n'},
@@ -127,6 +130,7 @@ var fieldSelectingOptions = map[int]uint{
 	'm':          flagShowNetmask,
 	'n':          flagShowNetwork,
 	'p':          flagShowPrefix,
+	'g':          flagShowGeoIP,
 	optReverse:   flagShowReverse,
 	optCIDR:      flagShowCIDR,
 	optWildcard:  flagShowWildcard,
@@ -188,6 +192,8 @@ Specific info options:
                                   resides on
   -h, --hostname                  Show hostname determined via DNS
   -o, --lookup-host=STRING        Show IP as determined via DNS
+  -g, --geoinfo                   Show Geographic information about the
+                                  provided IP
 
 Output format:
       --format=FORMAT             Print the output as human (default for the
@@ -210,7 +216,7 @@ Other options:
 	e(`Usage: ipcalc [-46sv?] [-c|--check] [--equals=NET] [--subnet-of=NET]
         [--overlaps=NET] [-r|--random-private=STRING] [-i|--info]
         [--all-info] [-4|--ipv4] [-6|--ipv6] [-a|--address] [-b|--broadcast]
-        [-h|--hostname] [-o|--lookup-host=STRING]
+        [-h|--hostname] [-o|--lookup-host=STRING] [-g|--geoinfo]
         [-m|--netmask] [--wildcard] [-n|--network] [--cidr] [-p|--prefix]
         [--minaddr] [--maxaddr] [--addresses] [--addrspace]
         [--format=FORMAT]
@@ -440,7 +446,7 @@ func main() {
 		userFlags                                    uint
 	)
 
-	g := newGetopt(os.Args[1:], "S:cr:i46abho:mnpjsvd:", longOptions)
+	g := newGetopt(os.Args[1:], "S:cr:i46abho:gmnpjsvd:", longOptions)
 	for {
 		r, ok := g.next()
 		if !ok {
@@ -584,6 +590,10 @@ func main() {
 	}
 
 	userFlags = flags
+
+	if flags&flagShowAllInfo != 0 {
+		flags |= flagGetGeoIP
+	}
 
 	if flags&flagIPv4 == 0 && haveIP && strings.Contains(ipStr, ":") {
 		flags |= flagIPv6

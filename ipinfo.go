@@ -18,6 +18,7 @@ type ipInfo struct {
 	typ, class                      string
 	iid, eui64, mac                 string
 	macScope, macType               string
+	geo                             geoInfo
 }
 
 type addrBlock struct {
@@ -238,6 +239,10 @@ func getIPv4Info(ipStr string, prefix int, flags uint) (*ipInfo, bool) {
 	}
 	info.hosts = ipv4Hosts(prefix)
 
+	if flags&flagGetGeoIP != 0 {
+		info.geo = geoLookup(ipStr, prefix)
+	}
+
 	if flags&flagResolveHost != 0 && prefix == 32 {
 		name, ok := lookupHostname(addr)
 		if !ok {
@@ -432,6 +437,10 @@ func getIPv6Info(ipStr string, prefix int, flags uint) (*ipInfo, bool) {
 		info.hostmax = info.network
 	}
 	info.hosts = ipv6Hosts(prefix)
+
+	if flags&flagGetGeoIP != 0 {
+		info.geo = geoLookup(ipStr, prefix)
+	}
 
 	if flags&flagResolveHost != 0 && prefix == 128 {
 		name, ok := lookupHostname(addr)
