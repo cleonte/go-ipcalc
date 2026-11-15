@@ -5,12 +5,25 @@ import (
 	"fmt"
 	"math/bits"
 	"net/netip"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
 )
 
-const version = "1.2.0"
+// version is set at build time: -ldflags "-X main.version=1.2.0". Without
+// it, the module version of the build (go install) or "dev" is used.
+var version string
+
+func versionString() string {
+	if version != "" {
+		return version
+	}
+	if bi, ok := debug.ReadBuildInfo(); ok && bi.Main.Version != "" && bi.Main.Version != "(devel)" {
+		return strings.TrimPrefix(bi.Main.Version, "v")
+	}
+	return "dev"
+}
 
 const (
 	appVersion = 1 << iota
@@ -582,7 +595,7 @@ func realMain() {
 
 	switch app {
 	case appVersion:
-		fmt.Fprintf(out, "ipcalc %s\n", version)
+		fmt.Fprintf(out, "ipcalc %s\n", versionString())
 		exit(0)
 	case appDeaggregate:
 		deaggregate(ipStr)

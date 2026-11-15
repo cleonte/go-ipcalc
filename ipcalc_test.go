@@ -489,3 +489,16 @@ func TestDebianSplitHosts(t *testing.T) {
 		})
 	}
 }
+
+func TestVersion(t *testing.T) {
+	old := version
+	defer func() { version = old }()
+	version = "1.2.3"
+	if r := ipcalc(t, opts{}, "-v"); r.code != 0 || r.stdout != "ipcalc 1.2.3\n" {
+		t.Errorf("%d %q", r.code, r.stdout)
+	}
+	version = ""
+	if r := ipcalc(t, opts{}, "--version"); r.code != 0 || !strings.HasPrefix(r.stdout, "ipcalc ") {
+		t.Errorf("%d %q", r.code, r.stdout)
+	}
+}

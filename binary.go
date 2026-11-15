@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/netip"
 	"strings"
-	"syscall"
-	"unsafe"
+
+	"golang.org/x/term"
 )
 
 const (
@@ -152,10 +152,8 @@ func outputColumns() int {
 		}
 	}
 	if env.StdoutTTY && env.StdoutFile != nil {
-		var ws [4]uint16
-		_, _, e := syscall.Syscall(syscall.SYS_IOCTL, env.StdoutFile.Fd(), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&ws)))
-		if e == 0 && ws[1] > 0 {
-			return int(ws[1])
+		if w, _, err := term.GetSize(int(env.StdoutFile.Fd())); err == nil && w > 0 {
+			return w
 		}
 	}
 	return defaultCols
