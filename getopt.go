@@ -48,7 +48,7 @@ func (g *getopt) shortSpec(c byte) (found, hasArg bool) {
 
 func (g *getopt) warn(format string, a ...any) {
 	if g.opterr {
-		fmt.Fprintf(errOut, "ipcalc: "+format+"\n", a...)
+		fmt.Fprintf(errOut, env.Prog+": "+format+"\n", a...)
 	}
 }
 
@@ -113,6 +113,7 @@ func (g *getopt) nextShort() optResult {
 func (g *getopt) nextLong(body string) optResult {
 	name, val, hasVal := strings.Cut(body, "=")
 	var match *longOpt
+	var candidates []string
 	ambiguous := false
 	for i := range g.long {
 		l := &g.long[i]
@@ -121,6 +122,7 @@ func (g *getopt) nextLong(body string) optResult {
 			break
 		}
 		if strings.HasPrefix(l.name, name) {
+			candidates = append(candidates, "'--"+l.name+"'")
 			if match == nil {
 				match = l
 			} else if match.val != l.val || match.hasArg != l.hasArg {
@@ -129,7 +131,7 @@ func (g *getopt) nextLong(body string) optResult {
 		}
 	}
 	if ambiguous {
-		g.warn("option '--%s' is ambiguous", name)
+		g.warn("option '--%s' is ambiguous; possibilities: %s", name, strings.Join(candidates, " "))
 		return optResult{c: '?'}
 	}
 	if match == nil {

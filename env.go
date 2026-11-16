@@ -8,6 +8,7 @@ import (
 // environ is everything the program takes from the process, so that tests
 // can run it in-process.
 type environ struct {
+	Prog       string // argv[0], which getopt diagnostics start with
 	Args       []string
 	Getenv     func(string) (string, bool)
 	Stdout     io.Writer
@@ -31,6 +32,7 @@ func isTTY(f *os.File) bool {
 
 func osEnviron() environ {
 	return environ{
+		Prog:       os.Args[0],
 		Args:       os.Args[1:],
 		Getenv:     os.LookupEnv,
 		Stdout:     os.Stdout,
@@ -45,6 +47,9 @@ func osEnviron() environ {
 // is reset first, so that it can be called repeatedly.
 func run(e environ) (code int) {
 	env = e
+	if env.Prog == "" {
+		env.Prog = "ipcalc"
+	}
 	errOut = e.Stderr
 	out = newOut(e.Stdout)
 	beSilent = false

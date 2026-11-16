@@ -510,3 +510,15 @@ func TestVersion(t *testing.T) {
 		t.Errorf("%d %q", r.code, r.stdout)
 	}
 }
+
+// getopt diagnostics start with argv[0] and list the candidates of an
+// ambiguous abbreviation, as glibc does.
+func TestGetoptDiagnostics(t *testing.T) {
+	var se bytes.Buffer
+	run(environ{Prog: "/usr/bin/ipcalc", Args: []string{"--net", "10.0.0.1"},
+		Getenv: func(string) (string, bool) { return "", false }, Stdout: &bytes.Buffer{}, Stderr: &se})
+	want := "/usr/bin/ipcalc: option '--net' is ambiguous; possibilities: '--netmask' '--network'\n"
+	if !strings.HasPrefix(se.String(), want) {
+		t.Errorf("got %q, want prefix %q", se.String(), want)
+	}
+}
