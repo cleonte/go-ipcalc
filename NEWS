@@ -1,4 +1,4 @@
-* Go port (unreleased)
+* go-ipcalc 0.1.0 (released 2026-11-16)
 - A port of ipcalc 1.2.0 to Go with the same options, output and exit
   statuses. Geographic information is read with a Go MaxMind DB reader, so
   there is no libmaxminddb dependency, and the version is set at build

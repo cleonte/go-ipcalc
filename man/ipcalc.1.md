@@ -1,10 +1,14 @@
-# ipcalc(1) - Perform simple operations on IP addresses and networks
+% ipcalc 1 "" "go-ipcalc" "General Commands Manual"
 
-## SYNOPSIS
-**ipcalc** [OPTION]... <IP address>[/prefix] [netmask]
+# NAME
+
+ipcalc - Perform simple operations on IP addresses and networks
+
+# SYNOPSIS
+**ipcalc** [OPTION]... _IP address_[/prefix] [netmask]
 
 
-## Description
+# DESCRIPTION
 
 **ipcalc** provides a simple way to calculate IP information for a host
 or network. Depending on the options specified, it may be used to provide
@@ -21,7 +25,7 @@ Multiple options may be specified. It is required to specify an IP
 address; several operations require a netmask or a CIDR prefix as well.
 
 
-## Output format
+# OUTPUT FORMAT
 
 The **--format**=_FORMAT_ option selects one of these formats:
 
@@ -53,7 +57,7 @@ Scripts should always pass **--format**, so that their output does not
 depend on the defaults.
 
 
-## Options
+# OPTIONS
 
 * **-c**, **--check**
   Checks whether this is a valid IP address. When an IP family is specified
@@ -285,7 +289,7 @@ depend on the defaults.
   Don't ever display error messages, nor the result of a comparison.
 
 
-## Deprecated options
+# DEPRECATED OPTIONS
 
 These options are kept for compatibility with earlier versions. On a
 terminal, ipcalc prints a hint that names the replacement.
@@ -307,7 +311,7 @@ terminal, ipcalc prints a hint that names the replacement.
   NO_COLOR environment variable set.
 
 
-## Environment
+# ENVIRONMENT
 
 * **NO_COLOR**
   When set, to any value, the **human** format is printed without colors,
@@ -321,9 +325,9 @@ terminal, ipcalc prints a hint that names the replacement.
   is not a terminal.
 
 
-## Examples
+# EXAMPLES
 
-### Display all information of an IPv4
+## Display all information of an IPv4
 
     $ ipcalc --all-info 193.92.150.2/24
     Address:        193.92.150.2
@@ -342,7 +346,7 @@ terminal, ipcalc prints a hint that names the replacement.
     Country code:   GR
     Country:        Greece
 
-### Display information in key-value format
+## Display information in key-value format
 
     $ ipcalc --format=shell -pnmb --minaddr --maxaddr --geoinfo --addrspace 193.92.150.2/255.255.255.224
     NETWORK=193.92.150.0
@@ -355,7 +359,7 @@ terminal, ipcalc prints a hint that names the replacement.
     COUNTRYCODE=GR
     COUNTRY=Greece
 
-### Display all information of an IPv6
+## Display all information of an IPv6
 
     $ ipcalc --all-info 2a03:2880:20:4f06:face:b00c:0:14/64
     Full Address:   2a03:2880:0020:4f06:face:b00c:0000:0014
@@ -374,7 +378,7 @@ terminal, ipcalc prints a hint that names the replacement.
     Country code:   IE
     Country:        Ireland
 
-### Display the MAC address behind an IPv6 link-local address
+## Display the MAC address behind an IPv6 link-local address
 
     $ ipcalc --all-info fe80::21b:21ff:fe3a:5c7d/64
     Full Address:   fe80:0000:0000:0000:021b:21ff:fe3a:5c7d
@@ -394,7 +398,7 @@ terminal, ipcalc prints a hint that names the replacement.
     HostMax:        fe80::ffff:ffff:ffff:ffff
     Hosts/Net:      2^(64) = 18446744073709551616
 
-### Display JSON output
+## Display JSON output
 
     $ ipcalc --all-info --format=json 2a03:2880:20:4f06:face:b00c:0:14/64
     {
@@ -417,7 +421,7 @@ terminal, ipcalc prints a hint that names the replacement.
       "COORDINATES":"53.000000,-8.000000"
     }
 
-### Split a network into subnets of different sizes
+## Split a network into subnets of different sizes
 
     $ ipcalc -S 1:28 -S 2:27 192.168.0.0/24
     [Split networks]
@@ -432,7 +436,7 @@ terminal, ipcalc prints a hint that names the replacement.
     Network:        192.168.0.96/27
     Network:        192.168.0.128/25
 
-### Split a network into subnets for a number of hosts
+## Split a network into subnets for a number of hosts
 
     $ ipcalc --split-hosts=10,20 192.168.0.0/24
     [Split networks]
@@ -461,7 +465,7 @@ terminal, ipcalc prints a hint that names the replacement.
     Network:        192.168.0.64/26
     Network:        192.168.0.128/25
 
-### Split an IPv6 prefix into one /58 and /64 networks in the remaining space
+## Split an IPv6 prefix into one /58 and /64 networks in the remaining space
 
     $ ipcalc --format=value -S 1:58 -S 64 2001:db8:1c88:6000::/56
     2001:db8:1c88:6000::/58
@@ -470,7 +474,7 @@ terminal, ipcalc prints a hint that names the replacement.
     ...
     2001:db8:1c88:60ff::/64
 
-### Display the bits of a network
+## Display the bits of a network
 
     $ ipcalc --binary 192.168.92.6/22
     Network:    192.168.92.0/22
@@ -486,50 +490,50 @@ terminal, ipcalc prints a hint that names the replacement.
     HostMax:    192.168.95.254   11000000.10101000.01011111.11111110
     Broadcast:  192.168.95.255   11000000.10101000.01011111.11111111
 
-### Check whether a network is a subnet of another
+## Check whether a network is a subnet of another
 
     $ ipcalc 192.168.0.1/24 --subnet-of=192.168.1.15/23
     192.168.0.0/24 is a subnet of 192.168.0.0/23
 
-### Check whether a network overlaps any network in a list
+## Check whether a network overlaps any network in a list
 
     $ while read net; do
     >   ipcalc -s 10.20.0.0/16 --overlaps="$net"
     >   case $? in 0) echo "conflict: $net" ;; 2) echo "bad entry: $net" ;; esac
     > done < networks.txt
 
-### Lookup of a hostname
+## Lookup of a hostname
 
     $ ipcalc --format=value --lookup-host localhost
     ::1
 
-### IPv4 lookup of a hostname
+## IPv4 lookup of a hostname
 
     $ ipcalc --format=value --lookup-host localhost -4
     127.0.0.1
 
-### Reverse lookup of a hostname
+## Reverse lookup of a hostname
 
     $ ipcalc --format=value -h 127.0.0.1
     localhost
 
-### Use the values in a shell script
+## Use the values in a shell script
 
     $ eval "$(ipcalc --format=shell -n -p 192.168.1.5/24)"
     $ echo "$NETWORK/$PREFIX"
     192.168.1.0/24
 
-## Authors
+# AUTHORS
 * Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
 * Erik Troan <ewt@redhat.com>
 * Preston Brown <pbrown@redhat.com>
 * David Cantrell <dcantrell@redhat.com>
 
-## Reporting Bugs
+# REPORTING BUGS
 
 Report bugs at https://gitlab.com/ipcalc/ipcalc/issues
 
-## Copyright
+# COPYRIGHT
 
 Copyright © 1997-2024 Red Hat, Inc.
 Copyright © 2020-2024 Nikos Mavrogiannopoulos

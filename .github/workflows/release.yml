@@ -1,0 +1,70 @@
+name: release
+
+# Pushing a tag vX.Y.Z builds the binaries and publishes a release.
+# Running the workflow by hand builds them without publishing.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - {goos: linux, goarch: amd64}
+          - {goos: linux, goarch: arm64}
+          - {goos: darwin, goarch: amd64}
+          - {goos: darwin, goarch: arm64}
+          - {goos: freebsd, goarch: amd64}
+          - {goos: windows, goarch: amd64}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          version=dev
+          case "$GITHUB_REF" in refs/tags/v*) version=${GITHUB_REF#refs/tags/v};; esac
+          name=ipcalc_${version}_${GOOS}_${GOARCH}
+          exe=ipcalc; [ "$GOOS" = windows ] && exe=ipcalc.exe
+          mkdir -p dist/$name
+          go build -trimpath -ldflags "-s -w -X github.com/cleonte/go-ipcalc/internal/ipcalc.version=$version" -o dist/$name/$exe ./cmd/ipcalc
+          cp COPYING README.md NEWS man/ipcalc.1 dist/$name/
+          cd dist
+          if [ "$GOOS" = windows ]; then zip -qr $name.zip $name; else tar czf $name.tar.gz $name; fi
+          rm -r $name
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd dist && sha256sum * > SHA256SUMS && cd ..
+          # the notes are the NEWS entry of the version
+          awk -v v="${GITHUB_REF_NAME#v}" 'index($0,"* go-ipcalc " v " ")==1 {p=1; next} /^[*] / {p=0} p' NEWS > notes.md
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md dist/*
