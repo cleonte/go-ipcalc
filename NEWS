@@ -2,8 +2,8 @@
 - A port of ipcalc 1.2.0 to Go with the same options, output and exit
   statuses. Geographic information is read with a Go MaxMind DB reader, so
   there is no libmaxminddb dependency, and the version is set at build
-  time with -ldflags "-X main.version=...". The entries below are those of
-  the C implementation.
+  time with -ldflags "-X github.com/cleonte/go-ipcalc/internal/ipcalc.version=...".
+  The entries below are those of the C implementation.
 
 * Version 1.2.0 (released 2026-10-15)
 - Added the --cidr option, which prints the network in CIDR notation
