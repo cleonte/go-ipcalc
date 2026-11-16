@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"bytes"
@@ -44,31 +44,30 @@ type opts struct {
 	geo       bool
 	stderrTTY bool
 	stdoutTTY bool
+
+	hostname       string // what the loopback addresses resolve to; "localhost" if empty
+	lookupHostname func(netip.Addr) (string, bool)
 }
 
 func trimNL(s string) string { return strings.TrimRight(s, "\n") }
 
 // fakeResolvers makes name lookups hermetic: localhost resolves to the
-// loopback addresses, and the loopback addresses to "localhost".
-func fakeResolvers(t *testing.T, hostname string) {
-	t.Helper()
-	oldHost, oldIP := lookupHostname, lookupIP
-	t.Cleanup(func() { lookupHostname, lookupIP = oldHost, oldIP })
-	lookupHostname = func(a netip.Addr) (string, bool) {
-		if a.IsLoopback() {
-			return hostname, true
-		}
-		return "", false
-	}
-	lookupIP = func(host string, family int) (string, bool) {
-		if host != "localhost" {
+// loopback addresses, and the loopback addresses to the given name.
+func fakeResolvers(hostname string) (func(netip.Addr) (string, bool), func(string, int) (string, bool)) {
+	return func(a netip.Addr) (string, bool) {
+			if a.IsLoopback() {
+				return hostname, true
+			}
 			return "", false
+		}, func(host string, family int) (string, bool) {
+			if host != "localhost" {
+				return "", false
+			}
+			if family == 6 {
+				return "::1", true
+			}
+			return "127.0.0.1", true
 		}
-		if family == 6 {
-			return "::1", true
-		}
-		return "127.0.0.1", true
-	}
 }
 
 type interleaved struct {
@@ -83,29 +82,33 @@ func (w interleaved) Write(p []byte) (int, error) {
 
 func ipcalc(t *testing.T, o opts, args ...string) result {
 	t.Helper()
-	savedDBs := [3]string{countryDB, cityDB, asnDB}
-	defer func() { countryDB, cityDB, asnDB = savedDBs[0], savedDBs[1], savedDBs[2] }()
+	e := environ{CountryDB: "/nonexistent/country", CityDB: "/nonexistent/city", ASNDB: "/nonexistent/asn"}
 	if o.geo {
 		dir := geoDatabases(t)
-		countryDB = filepath.Join(dir, "geo-country.mmdb")
-		cityDB = filepath.Join(dir, "geo-city.mmdb")
-		asnDB = filepath.Join(dir, "geo-asn.mmdb")
-	} else {
-		countryDB, cityDB, asnDB = "/nonexistent/country", "/nonexistent/city", "/nonexistent/asn"
+		e.CountryDB = filepath.Join(dir, "geo-country.mmdb")
+		e.CityDB = filepath.Join(dir, "geo-city.mmdb")
+		e.ASNDB = filepath.Join(dir, "geo-asn.mmdb")
+	}
+	name := o.hostname
+	if name == "" {
+		name = "localhost"
+	}
+	e.LookupHostname, e.LookupIP = fakeResolvers(name)
+	if o.lookupHostname != nil {
+		e.LookupHostname = o.lookupHostname
 	}
 
 	var both, so, se bytes.Buffer
-	code := run(environ{
-		Args: args,
-		Getenv: func(k string) (string, bool) {
-			v, ok := o.env[k]
-			return v, ok
-		},
-		Stdout:    interleaved{&both, &so},
-		Stderr:    interleaved{&both, &se},
-		StderrTTY: o.stderrTTY,
-		StdoutTTY: o.stdoutTTY,
-	})
+	e.Args = args
+	e.Getenv = func(k string) (string, bool) {
+		v, ok := o.env[k]
+		return v, ok
+	}
+	e.Stdout = interleaved{&both, &so}
+	e.Stderr = interleaved{&both, &se}
+	e.StderrTTY = o.stderrTTY
+	e.StdoutTTY = o.stdoutTTY
+	code := run(e)
 	return result{code, so.String(), se.String(), both.String()}
 }
 
@@ -128,7 +131,6 @@ func readGolden(t *testing.T, name string) string {
 
 func runStep(t *testing.T, s step, env map[string]string) {
 	t.Helper()
-	fakeResolvers(t, "localhost")
 	r := ipcalc(t, s.opts(env), s.args...)
 	out := trimNL(r.both)
 	switch s.kind {
@@ -186,7 +188,6 @@ func TestGenerated(t *testing.T) {
 // mustRun runs ipcalc and fails the test unless it succeeds.
 func mustRun(t *testing.T, args ...string) string {
 	t.Helper()
-	fakeResolvers(t, "localhost")
 	r := ipcalc(t, opts{}, args...)
 	if r.code != 0 {
 		t.Fatalf("%v: exit status %d: %s", args, r.code, r.both)
@@ -363,38 +364,35 @@ func TestAllInfoNoBits(t *testing.T) {
 // A name that comes from outside ipcalc is escaped in every format.
 func TestHostnameEscaping(t *testing.T) {
 	const name = "a\"b\\c\td"
-	fakeResolvers(t, name)
+	o := opts{hostname: name}
 
-	r := ipcalc(t, opts{}, "-j", "-h", "127.0.0.1")
+	r := ipcalc(t, o, "-j", "-h", "127.0.0.1")
 	var j map[string]any
 	if err := json.Unmarshal([]byte(r.stdout), &j); err != nil || j["HOSTNAME"] != name {
 		t.Errorf("JSON: %v %v", err, r.stdout)
 	}
 	for _, args := range [][]string{{"--format=shell", "-h", "127.0.0.1"}, {"-h", "127.0.0.1"}} {
-		r := ipcalc(t, opts{}, args...)
+		r := ipcalc(t, o, args...)
 		if v := shellVars(t, r.stdout); v["HOSTNAME"] != name {
 			t.Errorf("%v: HOSTNAME=%q", args, v["HOSTNAME"])
 		}
 	}
 	for _, args := range [][]string{{"--no-decorate", "-h", "127.0.0.1"}, {"--format=value", "-h", "127.0.0.1"}} {
-		r := ipcalc(t, opts{}, args...)
+		r := ipcalc(t, o, args...)
 		if r.code != 0 || trimNL(r.both) != name {
 			t.Errorf("%v: %d %q", args, r.code, r.both)
 		}
 	}
-	if r := ipcalc(t, opts{}, "-j", "--all-info", "127.0.0.1"); strings.Contains(r.stdout, "HOSTNAME") {
+	if r := ipcalc(t, o, "-j", "--all-info", "127.0.0.1"); strings.Contains(r.stdout, "HOSTNAME") {
 		t.Errorf("--all-info looked up the hostname: %s", r.stdout)
 	}
 }
 
 func TestHostnameNetworkNoLookup(t *testing.T) {
-	oldHost := lookupHostname
-	defer func() { lookupHostname = oldHost }()
-	lookupHostname = func(netip.Addr) (string, bool) {
+	r := ipcalc(t, opts{lookupHostname: func(netip.Addr) (string, bool) {
 		t.Error("looked up the name of a network")
 		return "", false
-	}
-	r := ipcalc(t, opts{}, "-h", "127.0.0.1/8")
+	}}, "-h", "127.0.0.1/8")
 	if r.code != 1 || trimNL(r.both) != "ipcalc: -h requires a single address, not a network: 127.0.0.1/8" {
 		t.Errorf("%d %q", r.code, r.both)
 	}

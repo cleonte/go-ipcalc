@@ -15,30 +15,31 @@ must stay identical to the C implementation.
 `doc/requirements/` is the normative description of the behavior (see
 `doc/requirements/GO-PORT.md` for how it maps to the Go code). For a change
 that alters observable behavior: update or add the requirement, then the tests
-(`cases_gen_test.go` / `ipcalc_test.go` with an expected-output file in
-`testdata/`), then the code, and keep `man/ipcalc.1.md`, `usage()` in
-`main.go` and `NEWS` in agreement.
+(`internal/ipcalc/cases_gen_test.go` / `ipcalc_test.go` with an expected-output file in
+`internal/ipcalc/testdata/`), then the code, and keep `man/ipcalc.1.md`, `usage()` in
+`internal/ipcalc/cli.go` and `NEWS` in agreement.
 
 ## Build and test
 
 Only the Go toolchain is needed.
 
 ```sh
-go build -o ipcalc .
+go build -o ipcalc ./cmd/ipcalc
 go vet ./...
 go test -race ./...
 ```
 
-The tests run the program in-process through `run()` (`env.go`), which resets
-the global state, so they must not use `t.Parallel()`. The environment,
-terminal state and name resolvers are injected through `environ` and the
-`lookupHostname`/`lookupIP` variables. Geo tests write MaxMind databases from
+The tests run the program in-process through `run()` (`env.go`). The environment, terminal state, name resolvers and geo
+database paths are injected through `environ`. Geo tests write MaxMind databases from
 `testdata/geo-*.json` (`geodb_test.go`). To add a test, create the
 expected-output file in `testdata/` and add a case in `ipcalc_test.go`.
 
 ## Architecture
 
-* `main.go`: options, mode and format selection (`realMain()`), `usage()`.
+`cmd/ipcalc` is a one-line `main`; everything else is in `internal/ipcalc`, and all
+state of a run is in the `app` struct (`env.go`), so runs do not share state.
+
+* `cli.go`: options, mode and format selection (`realMain()`), `usage()`.
 * `getopt.go`: GNU `getopt_long` work-alike (abbreviations, bundling, `--x=y`).
 * `ipinfo.go`: parsing, address-space tables, IPv4/IPv6 info (`ntop6()`
   follows libc's `inet_ntop`).

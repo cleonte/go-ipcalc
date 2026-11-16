@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"fmt"
@@ -21,6 +21,7 @@ type optResult struct {
 }
 
 type getopt struct {
+	ap       *app
 	args     []string
 	shortOpt string
 	long     []longOpt
@@ -31,8 +32,8 @@ type getopt struct {
 	opterr   bool
 }
 
-func newGetopt(args []string, short string, long []longOpt) *getopt {
-	return &getopt{args: args, shortOpt: short, long: long, opterr: true}
+func newGetopt(ap *app, args []string, short string, long []longOpt) *getopt {
+	return &getopt{ap: ap, args: args, shortOpt: short, long: long, opterr: true}
 }
 
 func (g *getopt) shortSpec(c byte) (found, hasArg bool) {
@@ -48,7 +49,7 @@ func (g *getopt) shortSpec(c byte) (found, hasArg bool) {
 
 func (g *getopt) warn(format string, a ...any) {
 	if g.opterr {
-		fmt.Fprintf(errOut, env.Prog+": "+format+"\n", a...)
+		fmt.Fprintf(g.ap.errOut, g.ap.env.Prog+": "+format+"\n", a...)
 	}
 }
 

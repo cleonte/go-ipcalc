@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"fmt"
@@ -10,14 +10,14 @@ func isSpace(c byte) bool {
 }
 
 // strtok(str, "-") yields the non-empty pieces between dashes
-func deaggregate(str string) {
+func (ap *app) deaggregate(str string) {
 	k := 0
 	for k < len(str) && str[k] == '-' {
 		k++
 	}
 	if k == len(str) {
-		errorf("ipcalc: bad deaggregation string: %s\n", str)
-		exit(1)
+		ap.errorf("ipcalc: bad deaggregation string: %s\n", str)
+		ap.exit(1)
 	}
 	end1 := k + strings.IndexByte(str[k:]+"-", '-')
 	d1 := str[k:end1]
@@ -30,8 +30,8 @@ func deaggregate(str string) {
 	}
 	rest = strings.TrimLeft(rest, "-")
 	if rest == "" {
-		errorf("ipcalc: bad deaggregation string: %s\n", trunc)
-		exit(1)
+		ap.errorf("ipcalc: bad deaggregation string: %s\n", trunc)
+		ap.exit(1)
 	}
 	d2 := rest
 	if i := strings.IndexByte(rest, '-'); i >= 0 {
@@ -41,33 +41,33 @@ func deaggregate(str string) {
 	d1 = strings.TrimFunc(d1, func(r rune) bool { return r < 128 && isSpace(byte(r)) })
 	d2 = strings.TrimFunc(d2, func(r rune) bool { return r < 128 && isSpace(byte(r)) })
 
-	if flags&flagIPv6 != 0 {
-		deaggregateV6(d1, d2)
+	if ap.flags&flagIPv6 != 0 {
+		ap.deaggregateV6(d1, d2)
 	} else {
-		deaggregateV4(d1, d2)
+		ap.deaggregateV4(d1, d2)
 	}
 }
 
-func deaggregateV4(s1, s2 string) {
+func (ap *app) deaggregateV4(s1, s2 string) {
 	a1, ok := parseIPv4Strict(s1)
 	if !ok {
-		errorf("ipcalc: bad IPv4 address: %s\n", s1)
-		exit(1)
+		ap.errorf("ipcalc: bad IPv4 address: %s\n", s1)
+		ap.exit(1)
 	}
 	a2, ok := parseIPv4Strict(s2)
 	if !ok {
-		errorf("ipcalc: bad IPv4 address: %s\n", s2)
-		exit(1)
+		ap.errorf("ipcalc: bad IPv4 address: %s\n", s2)
+		ap.exit(1)
 	}
 	base, end := uint64(ip4ToU32(a1)), uint64(ip4ToU32(a2))
 	if base > end {
-		errorf("ipcalc: bad range\n")
-		exit(1)
+		ap.errorf("ipcalc: bad range\n")
+		ap.exit(1)
 	}
 
 	var state int
-	outputStart(&state)
-	arrayStart(&state, "Deaggregated networks", "DEAGGREGATEDNETWORK")
+	ap.outputStart(&state)
+	ap.arrayStart(&state, "Deaggregated networks", "DEAGGREGATEDNETWORK")
 	for base <= end {
 		step := uint(0)
 		for step < 32 && base|(uint64(1)<<step) != base {
@@ -77,33 +77,33 @@ func deaggregateV4(s1, s2 string) {
 			}
 			step++
 		}
-		defaultPrintf(&state, "Network:\t", fmt.Sprintf("%s/%d", u32ToStr(uint32(base)), 32-step))
+		ap.defaultPrintf(&state, "Network:\t", fmt.Sprintf("%s/%d", u32ToStr(uint32(base)), 32-step))
 		base += uint64(1) << step
 	}
-	arrayStop(&state)
-	outputStop()
+	ap.arrayStop(&state)
+	ap.outputStop()
 }
 
-func deaggregateV6(s1, s2 string) {
+func (ap *app) deaggregateV6(s1, s2 string) {
 	if _, ok := parseIPv6Strict(s1); !ok {
-		errorf("ipcalc: bad IPv6 address: %s\n", s1)
-		exit(1)
+		ap.errorf("ipcalc: bad IPv6 address: %s\n", s1)
+		ap.exit(1)
 	}
 	if _, ok := parseIPv6Strict(s2); !ok {
-		errorf("ipcalc: bad IPv6 address: %s\n", s2)
-		exit(1)
+		ap.errorf("ipcalc: bad IPv6 address: %s\n", s2)
+		ap.exit(1)
 	}
-	base, _ := strToU128(s1)
-	end, _ := strToU128(s2)
+	base, _ := ap.strToU128(s1)
+	end, _ := ap.strToU128(s2)
 	if base.cmp(end) > 0 {
-		errorf("ipcalc: bad IPv6 range\n")
-		exit(1)
+		ap.errorf("ipcalc: bad IPv6 range\n")
+		ap.exit(1)
 	}
 
 	one := u128From64(1)
 	var state int
-	outputStart(&state)
-	arrayStart(&state, "Deaggregated networks", "DEAGGREGATEDNETWORK")
+	ap.outputStart(&state)
+	ap.arrayStart(&state, "Deaggregated networks", "DEAGGREGATEDNETWORK")
 	for {
 		step := uint(0)
 		for step < 128 && base.and(one.shl(step)).isZero() {
@@ -112,7 +112,7 @@ func deaggregateV6(s1, s2 string) {
 			}
 			step++
 		}
-		defaultPrintf(&state, "Network:\t", fmt.Sprintf("%s/%d", base.str(), 128-step))
+		ap.defaultPrintf(&state, "Network:\t", fmt.Sprintf("%s/%d", base.str(ap.v6()), 128-step))
 
 		// stop at the network holding the end; advancing past the last
 		// address of the IPv6 space would wrap around
@@ -122,6 +122,6 @@ func deaggregateV6(s1, s2 string) {
 		}
 		base = tmp.add(one)
 	}
-	arrayStop(&state)
-	outputStop()
+	ap.arrayStop(&state)
+	ap.outputStop()
 }

@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"crypto/rand"
@@ -85,13 +85,6 @@ const (
 	optBinary
 )
 
-var (
-	beSilent    bool
-	exitFailure = 1
-	colors      bool
-	flags       uint
-)
-
 var longOptions = []longOpt{
 	{"check", false, 'c'},
 	{"equals", true, optEquals},
@@ -149,8 +142,8 @@ var fieldSelectingOptions = map[int]uint{
 	optAddrspace: flagShowAddrspace,
 }
 
-func usage(verbose bool) {
-	e := func(s string) { fmt.Fprint(errOut, s) }
+func (ap *app) usage(verbose bool) {
+	e := func(s string) { fmt.Fprint(ap.errOut, s) }
 	if verbose {
 		e(`Usage: ipcalc [OPTION...]
   -c, --check                     Validate IP address
@@ -259,9 +252,9 @@ func mask2prefix(a netip.Addr) int {
 	return c
 }
 
-func strToPrefix(prefixStr string, fix bool) int {
+func (ap *app) strToPrefix(prefixStr string, fix bool) int {
 	prefix := -1
-	if flags&flagIPv6 == 0 && strings.Contains(prefixStr, ".") {
+	if ap.flags&flagIPv6 == 0 && strings.Contains(prefixStr, ".") {
 		a, ok := parseIPv4Strict(prefixStr)
 		if !ok {
 			return -1
@@ -274,18 +267,18 @@ func strToPrefix(prefixStr string, fix bool) int {
 		}
 		prefix = v
 	}
-	if fix && prefix > 32 && flags&flagIPv6 == 0 {
-		flags |= flagIPv6
+	if fix && prefix > 32 && ap.flags&flagIPv6 == 0 {
+		ap.flags |= flagIPv6
 	}
-	if prefix < 0 || (flags&flagIPv6 != 0 && prefix > 128) || (flags&flagIPv6 == 0 && prefix > 32) {
+	if prefix < 0 || (ap.flags&flagIPv6 != 0 && prefix > 128) || (ap.flags&flagIPv6 == 0 && prefix > 32) {
 		return -1
 	}
 	return prefix
 }
 
-func generateIPNetwork(prefix int) (string, bool) {
+func (ap *app) generateIPNetwork(prefix int) (string, bool) {
 	var ipbuf string
-	if flags&flagIPv6 != 0 {
+	if ap.flags&flagIPv6 != 0 {
 		var b [16]byte
 		if _, err := rand.Read(b[1:]); err != nil {
 			return "", false
@@ -313,68 +306,68 @@ func generateIPNetwork(prefix int) (string, bool) {
 	return fmt.Sprintf("%s/%d", ipbuf, prefix), true
 }
 
-func parseFormat(name string) int {
+func (ap *app) parseFormat(name string) int {
 	for i, n := range formatNames {
 		if n == name {
 			return i
 		}
 	}
-	errorf("ipcalc: unknown output format: %s; use human, shell, json or value\n", name)
+	ap.errorf("ipcalc: unknown output format: %s; use human, shell, json or value\n", name)
 	return -1
 }
 
-func legacyFormat() outputFormat {
+func (ap *app) legacyFormat() outputFormat {
 	switch {
-	case flags&flagJSON != 0:
+	case ap.flags&flagJSON != 0:
 		return formatJSON
-	case flags&flagShowModernInfo != 0:
+	case ap.flags&flagShowModernInfo != 0:
 		return formatHuman
-	case flags&flagNoDecorate != 0:
+	case ap.flags&flagNoDecorate != 0:
 		return formatValue
 	}
 	return formatShell
 }
 
-func formatConflict(option string, f int) bool {
-	errorf("ipcalc: conflicting output formats: %s and --format=%s\n", option, formatNames[f])
+func (ap *app) formatConflict(option string, f int) bool {
+	ap.errorf("ipcalc: conflicting output formats: %s and --format=%s\n", option, formatNames[f])
 	return false
 }
 
-func selectFormat(name, other string, selected *uint, format *outputFormat) bool {
-	f := parseFormat(name)
+func (ap *app) selectFormat(name, other string, selected *uint, format *outputFormat) bool {
+	f := ap.parseFormat(name)
 	if f < 0 {
 		return false
 	}
 	if other != "" {
-		if parseFormat(other) < 0 {
+		if ap.parseFormat(other) < 0 {
 			return false
 		}
-		errorf("ipcalc: conflicting output formats: --format=%s and --format=%s\n", name, other)
+		ap.errorf("ipcalc: conflicting output formats: --format=%s and --format=%s\n", name, other)
 		return false
 	}
-	if flags&flagJSON != 0 && f != int(formatJSON) {
-		return formatConflict("-j", f)
+	if ap.flags&flagJSON != 0 && f != int(formatJSON) {
+		return ap.formatConflict("-j", f)
 	}
-	if flags&flagNoDecorate != 0 && f != int(formatValue) {
-		return formatConflict("--no-decorate", f)
+	if ap.flags&flagNoDecorate != 0 && f != int(formatValue) {
+		return ap.formatConflict("--no-decorate", f)
 	}
-	if flags&flagShowModernInfo != 0 {
+	if ap.flags&flagShowModernInfo != 0 {
 		*selected &^= flagResolveIP
 		if *selected != 0 {
-			errorf("ipcalc: -i and --all-info cannot be combined with specific field options\n")
+			ap.errorf("ipcalc: -i and --all-info cannot be combined with specific field options\n")
 			return false
 		}
 	}
 	if f == int(formatJSON) {
-		flags |= flagJSON
+		ap.flags |= flagJSON
 	} else if f == int(formatValue) {
-		flags |= flagNoDecorate
+		ap.flags |= flagNoDecorate
 	}
 	*format = outputFormat(f)
 	return true
 }
 
-func checkFormatForApp(format outputFormat, app int) bool {
+func (ap *app) checkFormatForApp(format outputFormat, app int) bool {
 	unsupported := ""
 	if app&(appSplit|appDeaggregate) != 0 && format == formatShell {
 		unsupported = "--split, --split-hosts or --deaggregate; use --format=value"
@@ -382,23 +375,23 @@ func checkFormatForApp(format outputFormat, app int) bool {
 		unsupported = "--equals, --subnet-of or --overlaps"
 	}
 	if unsupported != "" {
-		errorf("ipcalc: --format=%s is not supported with %s\n", formatNames[format], unsupported)
+		ap.errorf("ipcalc: --format=%s is not supported with %s\n", formatNames[format], unsupported)
 		return false
 	}
-	if app&^appShowInfo == 0 && format == formatValue && flags&flagShowModernInfo != 0 {
-		errorf("ipcalc: --format=value needs specific field options; use --format=shell or --format=json\n")
+	if app&^appShowInfo == 0 && format == formatValue && ap.flags&flagShowModernInfo != 0 {
+		ap.errorf("ipcalc: --format=value needs specific field options; use --format=shell or --format=json\n")
 		return false
 	}
 	return true
 }
 
-func suggestFormat(app int, selected uint) {
-	if beSilent || !env.StderrTTY {
+func (ap *app) suggestFormat(app int, selected uint) {
+	if ap.beSilent || !ap.env.StderrTTY {
 		return
 	}
 	var option, replacement string
 	switch {
-	case flags&flagJSON != 0:
+	case ap.flags&flagJSON != 0:
 		option = "-j"
 		switch {
 		case app&appCompare != 0:
@@ -408,7 +401,7 @@ func suggestFormat(app int, selected uint) {
 		default:
 			replacement = "--format=json"
 		}
-	case flags&flagNoDecorate != 0:
+	case ap.flags&flagNoDecorate != 0:
 		option = "--no-decorate"
 		switch {
 		case app&appCompare != 0:
@@ -421,10 +414,10 @@ func suggestFormat(app int, selected uint) {
 	default:
 		return
 	}
-	fmt.Fprintf(errOut, "ipcalc: hint: %s is deprecated; use %s\n", option, replacement)
+	fmt.Fprintf(ap.errOut, "ipcalc: hint: %s is deprecated; use %s\n", option, replacement)
 }
 
-func realMain() {
+func (ap *app) realMain() {
 	var (
 		randomStr, hostname, ipStr, chptr, prefixStr string
 		haveRandom, haveIP, haveHost, haveChptr      bool
@@ -440,7 +433,7 @@ func realMain() {
 		userFlags                                    uint
 	)
 
-	g := newGetopt(env.Args, "S:cr:i46abho:gmnpjsvd:", longOptions)
+	g := newGetopt(ap, ap.env.Args, "S:cr:i46abho:gmnpjsvd:", longOptions)
 	for {
 		r, ok := g.next()
 		if !ok {
@@ -454,7 +447,7 @@ func realMain() {
 			cmpStr = r.arg
 			cmpOp = map[int]int{optEquals: cmpEquals, optSubnetOf: cmpSubnetOf, optOverlaps: cmpOverlaps}[c]
 			ncmps++
-			exitFailure = 2
+			ap.exitFailure = 2
 		case 'S':
 			app |= appSplit
 			splitStrs = append(splitStrs, r.arg)
@@ -468,28 +461,28 @@ func realMain() {
 			ipStr, haveIP = r.arg, true
 		case 'r':
 			app |= appShowInfo
-			flags |= flagRandom
+			ap.flags |= flagRandom
 			randomStr, haveRandom = r.arg, true
 		case 'i':
 			app |= appShowInfo
-			flags |= flagShowModernInfo
+			ap.flags |= flagShowModernInfo
 		case optAllInfo:
 			app |= appShowInfo
-			flags |= flagShowAllInfo | flagShowModernInfo
+			ap.flags |= flagShowAllInfo | flagShowModernInfo
 		case optClassPrefix:
-			flags |= flagAssumeClassPrefix
+			ap.flags |= flagAssumeClassPrefix
 		case '4':
-			flags |= flagIPv4
+			ap.flags |= flagIPv4
 		case '6':
-			flags |= flagIPv6
+			ap.flags |= flagIPv6
 		case 'o':
 			selected |= fieldSelectingOptions['o']
 			hostname, haveHost = r.arg, true
 		case optNoDecorate:
-			flags |= flagNoDecorate
+			ap.flags |= flagNoDecorate
 			noDecorate = true
 		case 'j':
-			flags |= flagJSON
+			ap.flags |= flagJSON
 		case optFormat:
 			if formatStr == "" {
 				formatStr = r.arg
@@ -497,26 +490,26 @@ func realMain() {
 				otherFormatStr = r.arg
 			}
 		case 's':
-			beSilent = true
+			ap.beSilent = true
 		case 'v':
 			app |= appVersion
 		case optUsage:
 			if !badOption {
-				usage(false)
-				exit(0)
+				ap.usage(false)
+				ap.exit(0)
 			}
 		case optHelp:
 			if !badOption {
-				usage(true)
-				exit(0)
+				ap.usage(true)
+				ap.exit(0)
 			}
 		case '?':
 			if r.optopt == '?' && !badOption {
-				usage(true)
-				exit(0)
+				ap.usage(true)
+				ap.exit(0)
 			}
 			if r.optopt == optEquals || r.optopt == optSubnetOf || r.optopt == optOverlaps {
-				exitFailure = 2
+				ap.exitFailure = 2
 			}
 			badOption = true
 			g.opterr = false
@@ -529,14 +522,14 @@ func realMain() {
 		app |= appShowInfo
 	}
 	if badOption {
-		usage(true)
-		exit(exitFailure)
+		ap.usage(true)
+		ap.exit(ap.exitFailure)
 	}
 
 	if rest := g.remaining(); len(rest) > 0 {
 		if haveIP {
-			errorf("ipcalc: superfluous option given\n")
-			exit(exitFailure)
+			ap.errorf("ipcalc: superfluous option given\n")
+			ap.exit(ap.exitFailure)
 		}
 		ipStr, haveIP = rest[0], true
 		if len(rest) > 1 {
@@ -545,124 +538,124 @@ func realMain() {
 	}
 
 	if formatStr != "" {
-		if !selectFormat(formatStr, otherFormatStr, &selected, &format) {
-			exit(exitFailure)
+		if !ap.selectFormat(formatStr, otherFormatStr, &selected, &format) {
+			ap.exit(ap.exitFailure)
 		}
-	} else if flags&flagJSON != 0 && flags&flagNoDecorate != 0 {
-		flags &^= flagNoDecorate
+	} else if ap.flags&flagJSON != 0 && ap.flags&flagNoDecorate != 0 {
+		ap.flags &^= flagNoDecorate
 	}
 
-	if selected == 0 || (formatStr == "" && flags&flagJSON != 0) {
-		flags |= flagShowModernInfo
+	if selected == 0 || (formatStr == "" && ap.flags&flagJSON != 0) {
+		ap.flags |= flagShowModernInfo
 	}
-	flags |= selected
+	ap.flags |= selected
 
 	if formatStr == "" {
-		format = legacyFormat()
+		format = ap.legacyFormat()
 	}
 
 	if bits.OnesCount(uint(app)) > 1 || ncmps > 1 {
-		errorf("ipcalc: you cannot mix these options\n")
-		exit(exitFailure)
+		ap.errorf("ipcalc: you cannot mix these options\n")
+		ap.exit(ap.exitFailure)
 	}
 
 	if noDecorate && app&appShowBits != 0 {
-		errorf("ipcalc: --no-decorate is not supported with --binary; use --format=value\n")
-		exit(exitFailure)
+		ap.errorf("ipcalc: --no-decorate is not supported with --binary; use --format=value\n")
+		ap.exit(ap.exitFailure)
 	}
 
-	if formatStr != "" && !checkFormatForApp(format, app) {
-		exit(exitFailure)
+	if formatStr != "" && !ap.checkFormatForApp(format, app) {
+		ap.exit(ap.exitFailure)
 	}
 	if formatStr == "" {
-		suggestFormat(app, selected)
+		ap.suggestFormat(app, selected)
 	}
 
-	if flags&flagIPv6 != 0 && flags&flagIPv4 != 0 {
-		errorf("ipcalc: you cannot specify both IPv4 and IPv6\n")
-		exit(exitFailure)
+	if ap.flags&flagIPv6 != 0 && ap.flags&flagIPv4 != 0 {
+		ap.errorf("ipcalc: you cannot specify both IPv4 and IPv6\n")
+		ap.exit(ap.exitFailure)
 	}
 
-	userFlags = flags
+	userFlags = ap.flags
 
-	if flags&flagShowAllInfo != 0 {
-		flags |= flagGetGeoIP
+	if ap.flags&flagShowAllInfo != 0 {
+		ap.flags |= flagGetGeoIP
 	}
 
-	if flags&flagIPv4 == 0 && haveIP && strings.Contains(ipStr, ":") {
-		flags |= flagIPv6
+	if ap.flags&flagIPv4 == 0 && haveIP && strings.Contains(ipStr, ":") {
+		ap.flags |= flagIPv6
 	}
 
 	switch app {
 	case appVersion:
-		fmt.Fprintf(out, "ipcalc %s\n", versionString())
-		exit(0)
+		fmt.Fprintf(ap.out, "ipcalc %s\n", versionString())
+		ap.exit(0)
 	case appDeaggregate:
-		deaggregate(ipStr)
-		exit(0)
+		ap.deaggregate(ipStr)
+		ap.exit(0)
 	}
 
 	prefix := -1
 
-	if flags&flagRandom != 0 {
+	if ap.flags&flagRandom != 0 {
 		if haveIP {
-			errorf("ipcalc: provided superfluous parameter '%s'\n", ipStr)
-			exit(exitFailure)
+			ap.errorf("ipcalc: provided superfluous parameter '%s'\n", ipStr)
+			ap.exit(ap.exitFailure)
 		}
-		prefix = strToPrefix(randomStr, true)
+		prefix = ap.strToPrefix(randomStr, true)
 		if prefix < 0 {
 			fam := "IPv4"
-			if flags&flagIPv6 != 0 {
+			if ap.flags&flagIPv6 != 0 {
 				fam = "IPv6"
 			}
-			errorf("ipcalc: bad %s prefix: %s\n", fam, randomStr)
-			exit(exitFailure)
+			ap.errorf("ipcalc: bad %s prefix: %s\n", fam, randomStr)
+			ap.exit(ap.exitFailure)
 		}
-		s, ok := generateIPNetwork(prefix)
+		s, ok := ap.generateIPNetwork(prefix)
 		if !ok {
-			errorf("ipcalc: cannot generate network with prefix: %d\n", prefix)
-			exit(exitFailure)
+			ap.errorf("ipcalc: cannot generate network with prefix: %d\n", prefix)
+			ap.exit(ap.exitFailure)
 		}
 		ipStr, haveIP = s, true
 		prefix = -1
 	}
 
 	if !haveHost && !haveIP {
-		errorf("ipcalc: ip address expected\n")
-		if !beSilent {
-			usage(true)
+		ap.errorf("ipcalc: ip address expected\n")
+		if !ap.beSilent {
+			ap.usage(true)
 		}
-		exit(exitFailure)
+		ap.exit(ap.exitFailure)
 	}
 
 	if haveHost {
 		family := 0
-		if flags&flagIPv6 != 0 {
+		if ap.flags&flagIPv6 != 0 {
 			family = 6
-		} else if flags&flagIPv4 != 0 {
+		} else if ap.flags&flagIPv4 != 0 {
 			family = 4
 		}
-		s, ok := lookupIP(hostname, family)
+		s, ok := ap.lookupIP(hostname, family)
 		if !ok {
-			errorf("ipcalc: could not resolve %s\n", hostname)
-			exit(exitFailure)
+			ap.errorf("ipcalc: could not resolve %s\n", hostname)
+			ap.exit(ap.exitFailure)
 		}
 		ipStr = s
-		if flags&flagIPv4 == 0 && strings.Contains(ipStr, ":") {
-			flags |= flagIPv6
+		if ap.flags&flagIPv4 == 0 && strings.Contains(ipStr, ":") {
+			ap.flags |= flagIPv6
 		}
 	}
 
 	havePrefix := false
 	if haveChptr {
-		if flags&flagIPv6 == 0 {
+		if ap.flags&flagIPv6 == 0 {
 			prefixStr, havePrefix = chptr, true
 		} else {
-			errorf("ipcalc: unexpected argument: %s\n", chptr)
-			if !beSilent {
-				usage(true)
+			ap.errorf("ipcalc: unexpected argument: %s\n", chptr)
+			if !ap.beSilent {
+				ap.usage(true)
 			}
-			exit(exitFailure)
+			ap.exit(ap.exitFailure)
 		}
 	}
 
@@ -674,72 +667,72 @@ func realMain() {
 	}
 
 	if havePrefix {
-		prefix = strToPrefix(prefixStr, false)
+		prefix = ap.strToPrefix(prefixStr, false)
 		if prefix < 0 {
 			fam := "IPv4"
-			if flags&flagIPv6 != 0 {
+			if ap.flags&flagIPv6 != 0 {
 				fam = "IPv6"
 			}
-			errorf("ipcalc: bad %s prefix: %s\n", fam, prefixStr)
-			exit(exitFailure)
+			ap.errorf("ipcalc: bad %s prefix: %s\n", fam, prefixStr)
+			ap.exit(ap.exitFailure)
 		}
 	}
 
 	var info *ipInfo
 	var ok bool
-	if flags&flagIPv6 != 0 {
-		info, ok = getIPv6Info(ipStr, prefix, flags)
+	if ap.flags&flagIPv6 != 0 {
+		info, ok = ap.getIPv6Info(ipStr, prefix, ap.flags)
 	} else {
-		info, ok = getIPv4Info(ipStr, prefix, flags)
+		info, ok = ap.getIPv4Info(ipStr, prefix, ap.flags)
 	}
 	if !ok {
-		exit(exitFailure)
+		ap.exit(ap.exitFailure)
 	}
 
 	switch app {
 	case appSplit:
 		if len(splitStrs) > 0 && len(splitHostsStrs) > 0 {
-			errorf("ipcalc: --split-hosts cannot be combined with --split\n")
-			exit(exitFailure)
+			ap.errorf("ipcalc: --split-hosts cannot be combined with --split\n")
+			ap.exit(ap.exitFailure)
 		}
 		var reqs []splitReq
 		for _, h := range splitHostsStrs {
 			var ok bool
-			if reqs, ok = parseSplitHosts(h, reqs); !ok {
-				exit(exitFailure)
+			if reqs, ok = ap.parseSplitHosts(h, reqs); !ok {
+				ap.exit(ap.exitFailure)
 			}
 		}
 		nfill := 0
 		for _, sstr := range splitStrs {
-			rq, ok := parseSplitReq(sstr)
+			rq, ok := ap.parseSplitReq(sstr)
 			if !ok {
-				exit(exitFailure)
+				ap.exit(ap.exitFailure)
 			}
 			if rq.count == 0 {
 				if nfill++; nfill > 1 {
-					errorf("ipcalc: only one split prefix may be given without a count\n")
-					exit(exitFailure)
+					ap.errorf("ipcalc: only one split prefix may be given without a count\n")
+					ap.exit(ap.exitFailure)
 				}
 			}
 			reqs = append(reqs, rq)
 		}
-		showSplitNetworks(reqs, info)
-		exit(0)
+		ap.showSplitNetworks(reqs, info)
+		ap.exit(0)
 	case appCheck:
-		exit(0)
+		ap.exit(0)
 	case appCompare:
-		exit(compareNetworks(cmpOp, info, flags, cmpStr, userFlags))
+		ap.exit(ap.compareNetworks(cmpOp, info, ap.flags, cmpStr, userFlags))
 	}
 
-	_, noColor := env.Getenv("NO_COLOR")
-	if env.StdoutTTY && !noColor {
-		colors = true
+	_, noColor := ap.env.Getenv("NO_COLOR")
+	if ap.env.StdoutTTY && !noColor {
+		ap.colors = true
 	}
 
 	if app == appShowBits {
-		showBinary(info, format)
-		exit(0)
+		ap.showBinary(info, format)
+		ap.exit(0)
 	}
-	showInfoFields(info, format, haveRandom)
-	exit(0)
+	ap.showInfoFields(info, format, haveRandom)
+	ap.exit(0)
 }

@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"bytes"
@@ -21,7 +21,6 @@ func TestColorOutput(t *testing.T) {
 			for k, v := range c.env {
 				env[k] = v
 			}
-			fakeResolvers(t, "localhost")
 			r := ipcalcTTY(t, opts{env: env, geo: c.bin == "geo"}, c.args...)
 			if r.code != 0 {
 				t.Fatalf("exit status %d: %s", r.code, r.stderr)

@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"fmt"
@@ -63,7 +63,7 @@ func comparisonHolds(op int, a, b *binaryNetwork) bool {
 	return a.contains(b) || b.contains(a)
 }
 
-func parseNetwork(str string, fl *uint) (*ipInfo, bool) {
+func (ap *app) parseNetwork(str string, fl *uint) (*ipInfo, bool) {
 	prefix := -1
 	if *fl&flagIPv4 == 0 && strings.Contains(str, ":") {
 		*fl |= flagIPv6
@@ -73,39 +73,39 @@ func parseNetwork(str string, fl *uint) (*ipInfo, bool) {
 		str = str[:i]
 		// str_to_prefix() reads the global flags in C; here the caller's
 		// flags are the user's, so they are swapped in for the call
-		saved := flags
-		flags = *fl
-		prefix = strToPrefix(prefixStr, false)
-		*fl = flags
-		flags = saved
+		saved := ap.flags
+		ap.flags = *fl
+		prefix = ap.strToPrefix(prefixStr, false)
+		*fl = ap.flags
+		ap.flags = saved
 		if prefix < 0 {
 			fam := "IPv4"
 			if *fl&flagIPv6 != 0 {
 				fam = "IPv6"
 			}
-			errorf("ipcalc: bad %s prefix: %s\n", fam, prefixStr)
+			ap.errorf("ipcalc: bad %s prefix: %s\n", fam, prefixStr)
 			return nil, false
 		}
 	}
 	if *fl&flagIPv6 != 0 {
-		return getIPv6Info(str, prefix, *fl)
+		return ap.getIPv6Info(str, prefix, *fl)
 	}
-	return getIPv4Info(str, prefix, *fl)
+	return ap.getIPv4Info(str, prefix, *fl)
 }
 
 // compareNetworks returns the exit status, as cmp(1).
-func compareNetworks(op int, network *ipInfo, fl uint, otherStr string, userFlags uint) int {
-	other, ok := parseNetwork(otherStr, &userFlags)
+func (ap *app) compareNetworks(op int, network *ipInfo, fl uint, otherStr string, userFlags uint) int {
+	other, ok := ap.parseNetwork(otherStr, &userFlags)
 	if !ok {
-		return exitFailure
+		return ap.exitFailure
 	}
 	a, ok1 := toBinaryNetwork(network, fl)
 	b, ok2 := toBinaryNetwork(other, userFlags)
 	if !ok1 || !ok2 {
-		return exitFailure
+		return ap.exitFailure
 	}
 	holds := comparisonHolds(op, &a, &b)
-	if !beSilent && fl&(flagJSON|flagNoDecorate) == 0 {
+	if !ap.beSilent && fl&(flagJSON|flagNoDecorate) == 0 {
 		not := ""
 		if !holds {
 			not = "not "
@@ -123,7 +123,7 @@ func compareNetworks(op int, network *ipInfo, fl uint, otherStr string, userFlag
 				msg = "The networks do not overlap"
 			}
 		}
-		colorPrintf(colBlue, "", msg)
+		ap.colorPrintf(colBlue, "", msg)
 	}
 	if holds {
 		return 0

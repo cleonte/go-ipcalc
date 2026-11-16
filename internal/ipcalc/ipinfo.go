@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"fmt"
@@ -180,11 +180,11 @@ func parseIPv6Strict(s string) (netip.Addr, bool) {
 	return a, true
 }
 
-func getIPv4Info(ipStr string, prefix int, flags uint) (*ipInfo, bool) {
+func (ap *app) getIPv4Info(ipStr string, prefix int, flags uint) (*ipInfo, bool) {
 	info := &ipInfo{}
 	addr, ok := parseIPv4Strict(ipStr)
 	if !ok {
-		errorf("ipcalc: bad IPv4 address: %s\n", ipStr)
+		ap.errorf("ipcalc: bad IPv4 address: %s\n", ipStr)
 		return nil, false
 	}
 	ip := ip4ToU32(addr)
@@ -197,7 +197,7 @@ func getIPv4Info(ipStr string, prefix int, flags uint) (*ipInfo, bool) {
 		}
 	}
 	if prefix > 32 {
-		errorf("ipcalc: bad IPv4 prefix %d\n", prefix)
+		ap.errorf("ipcalc: bad IPv4 prefix %d\n", prefix)
 		return nil, false
 	}
 
@@ -240,13 +240,13 @@ func getIPv4Info(ipStr string, prefix int, flags uint) (*ipInfo, bool) {
 	info.hosts = ipv4Hosts(prefix)
 
 	if flags&flagGetGeoIP != 0 {
-		info.geo = geoLookup(ipStr, prefix)
+		info.geo = ap.geoLookup(ipStr, prefix)
 	}
 
 	if flags&flagResolveHost != 0 && prefix == 32 {
-		name, ok := lookupHostname(addr)
+		name, ok := ap.lookupHostname(addr)
 		if !ok {
-			errorf("ipcalc: cannot find hostname for %s: Unknown host\n", ipStr)
+			ap.errorf("ipcalc: cannot find hostname for %s: Unknown host\n", ipStr)
 			return nil, false
 		}
 		info.hostname = name
@@ -393,11 +393,11 @@ func (info *ipInfo) ipv6IIDInfo(ip [16]byte) {
 	}
 }
 
-func getIPv6Info(ipStr string, prefix int, flags uint) (*ipInfo, bool) {
+func (ap *app) getIPv6Info(ipStr string, prefix int, flags uint) (*ipInfo, bool) {
 	info := &ipInfo{}
 	addr, ok := parseIPv6Strict(ipStr)
 	if !ok {
-		errorf("ipcalc: bad IPv6 address: %s\n", ipStr)
+		ap.errorf("ipcalc: bad IPv6 address: %s\n", ipStr)
 		return nil, false
 	}
 	ip := addr.As16()
@@ -405,7 +405,7 @@ func getIPv6Info(ipStr string, prefix int, flags uint) (*ipInfo, bool) {
 	info.ip = ntop6(ip)
 
 	if prefix > 128 {
-		errorf("ipcalc: bad IPv6 prefix: %d\n", prefix)
+		ap.errorf("ipcalc: bad IPv6 prefix: %d\n", prefix)
 		return nil, false
 	} else if prefix < 0 {
 		prefix = 128
@@ -439,13 +439,13 @@ func getIPv6Info(ipStr string, prefix int, flags uint) (*ipInfo, bool) {
 	info.hosts = ipv6Hosts(prefix)
 
 	if flags&flagGetGeoIP != 0 {
-		info.geo = geoLookup(ipStr, prefix)
+		info.geo = ap.geoLookup(ipStr, prefix)
 	}
 
 	if flags&flagResolveHost != 0 && prefix == 128 {
-		name, ok := lookupHostname(addr)
+		name, ok := ap.lookupHostname(addr)
 		if !ok {
-			errorf("ipcalc: cannot find hostname for %s: Unknown host\n", ipStr)
+			ap.errorf("ipcalc: cannot find hostname for %s: Unknown host\n", ipStr)
 			return nil, false
 		}
 		info.hostname = name

@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"fmt"
@@ -104,7 +104,7 @@ func recordNetwork(ipStr string, prefix int) string {
 
 // geoLookup fills the geo values; a missing database or record is not an
 // error: the values it would provide stay empty.
-func geoLookup(ipStr string, prefix int) geoInfo {
+func (ap *app) geoLookup(ipStr string, prefix int) geoInfo {
 	var geo geoInfo
 	var ip netip.Addr
 	var ok bool
@@ -121,7 +121,7 @@ func geoLookup(ipStr string, prefix int) geoInfo {
 	found := false
 	networkPrefix := 0
 
-	if rec, rp, ok := lookupRecord(countryDB, ip, v6, prefix); ok {
+	if rec, rp, ok := lookupRecord(ap.countryDB, ip, v6, prefix); ok {
 		found = true
 		networkPrefix = rp
 		geo.continent = getString(rec, "continent", "names", "en")
@@ -133,7 +133,7 @@ func geoLookup(ipStr string, prefix int) geoInfo {
 			geo.ccode = getString(rec, key, "iso_code")
 		}
 	}
-	if rec, rp, ok := lookupRecord(cityDB, ip, v6, prefix); ok {
+	if rec, rp, ok := lookupRecord(ap.cityDB, ip, v6, prefix); ok {
 		found = true
 		if rp > networkPrefix {
 			networkPrefix = rp
@@ -148,7 +148,7 @@ func geoLookup(ipStr string, prefix int) geoInfo {
 		geo.accuracyRadius = getUnsigned(rec, "location", "accuracy_radius")
 		geo.timeZone = getString(rec, "location", "time_zone")
 	}
-	if rec, rp, ok := lookupRecord(asnDB, ip, v6, prefix); ok {
+	if rec, rp, ok := lookupRecord(ap.asnDB, ip, v6, prefix); ok {
 		found = true
 		if rp > networkPrefix {
 			networkPrefix = rp

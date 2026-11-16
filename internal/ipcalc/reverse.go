@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"context"
@@ -61,12 +61,6 @@ func calcReverseDNS6(ip [16]byte, prefix int) []string {
 	}
 	return names
 }
-
-// the resolvers are variables so that tests can replace them
-var (
-	lookupHostname = resolveHostname
-	lookupIP       = resolveIP
-)
 
 func resolveHostname(a netip.Addr) (string, bool) {
 	names, err := net.DefaultResolver.LookupAddr(context.Background(), a.String())

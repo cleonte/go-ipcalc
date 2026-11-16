@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"bufio"
@@ -26,8 +26,6 @@ var formatNames = []string{"human", "shell", "json", "value"}
 
 // stdout is fully buffered and flushed on exit, like C stdio on a pipe, so
 // that diagnostics on stderr come first in merged output.
-var out *bufio.Writer
-
 func newOut(w io.Writer) *bufio.Writer { return bufio.NewWriterSize(w, 1<<20) }
 
 const (
@@ -37,53 +35,53 @@ const (
 	jsonArrayNext
 )
 
-func errorf(format string, a ...any) {
-	if beSilent {
+func (ap *app) errorf(format string, a ...any) {
+	if ap.beSilent {
 		return
 	}
-	fmt.Fprintf(errOut, format, a...)
+	fmt.Fprintf(ap.errOut, format, a...)
 }
 
-func colorPrintf(color, title, value string) {
-	out.WriteString(title)
-	if colors {
-		out.WriteString(color)
+func (ap *app) colorPrintf(color, title, value string) {
+	ap.out.WriteString(title)
+	if ap.colors {
+		ap.out.WriteString(color)
 	}
-	out.WriteString(value)
-	out.WriteString("\n")
-	if colors {
-		out.WriteString(colReset)
+	ap.out.WriteString(value)
+	ap.out.WriteString("\n")
+	if ap.colors {
+		ap.out.WriteString(colReset)
 	}
 }
 
-func jsonString(s string) {
-	out.WriteByte('"')
+func (ap *app) jsonString(s string) {
+	ap.out.WriteByte('"')
 	for i := 0; i < len(s); i++ {
 		c := s[i]
 		switch {
 		case c == '"' || c == '\\':
-			out.WriteByte('\\')
-			out.WriteByte(c)
+			ap.out.WriteByte('\\')
+			ap.out.WriteByte(c)
 		case c < 0x20:
-			fmt.Fprintf(out, "\\u%04x", c)
+			fmt.Fprintf(ap.out, "\\u%04x", c)
 		default:
-			out.WriteByte(c)
+			ap.out.WriteByte(c)
 		}
 	}
-	out.WriteByte('"')
+	ap.out.WriteByte('"')
 }
 
-func jsonPrintf(state *int, title string, hasTitle bool, value string) {
+func (ap *app) jsonPrintf(state *int, title string, hasTitle bool, value string) {
 	if *state == jsonArrayNext {
-		out.WriteString(",\n  ")
+		ap.out.WriteString(",\n  ")
 	} else if *state == jsonNext {
-		out.WriteString(",\n")
+		ap.out.WriteString(",\n")
 	}
-	out.WriteString("  ")
+	ap.out.WriteString("  ")
 	if hasTitle {
-		fmt.Fprintf(out, "\"%s\":", title)
+		fmt.Fprintf(ap.out, "\"%s\":", title)
 	}
-	jsonString(value)
+	ap.jsonString(value)
 	if *state == jsonFirst {
 		*state = jsonNext
 	} else if *state == jsonArrayFirst {
@@ -91,56 +89,56 @@ func jsonPrintf(state *int, title string, hasTitle bool, value string) {
 	}
 }
 
-func prettyPrintf(title, value string) {
-	if flags&flagNoDecorate != 0 {
-		out.WriteString(title + value + "\n")
+func (ap *app) prettyPrintf(title, value string) {
+	if ap.flags&flagNoDecorate != 0 {
+		ap.out.WriteString(title + value + "\n")
 	} else {
-		colorPrintf(colBlue, title, value)
+		ap.colorPrintf(colBlue, title, value)
 	}
 }
 
-func prettyDistPrintf(title, value string) {
-	if flags&flagNoDecorate != 0 {
-		out.WriteString(title + value + "\n")
+func (ap *app) prettyDistPrintf(title, value string) {
+	if ap.flags&flagNoDecorate != 0 {
+		ap.out.WriteString(title + value + "\n")
 	} else {
-		colorPrintf(colMag, title, value)
+		ap.colorPrintf(colMag, title, value)
 	}
 }
 
-func outputStart(state *int) {
-	if flags&flagJSON != 0 {
-		out.WriteString("{\n")
+func (ap *app) outputStart(state *int) {
+	if ap.flags&flagJSON != 0 {
+		ap.out.WriteString("{\n")
 	}
 	*state = jsonFirst
 }
 
-func outputSeparate() {
-	if flags&flagJSON == 0 {
-		out.WriteString("\n")
+func (ap *app) outputSeparate() {
+	if ap.flags&flagJSON == 0 {
+		ap.out.WriteString("\n")
 	}
 }
 
-func outputStop() {
-	if flags&flagJSON != 0 {
-		out.WriteString("\n}\n")
+func (ap *app) outputStop() {
+	if ap.flags&flagJSON != 0 {
+		ap.out.WriteString("\n}\n")
 	}
 }
 
-func arrayStart(state *int, head, jsonHead string) {
-	if flags&flagJSON != 0 {
+func (ap *app) arrayStart(state *int, head, jsonHead string) {
+	if ap.flags&flagJSON != 0 {
 		if *state == jsonNext {
-			out.WriteString(",\n")
+			ap.out.WriteString(",\n")
 		}
-		fmt.Fprintf(out, "  \"%s\":[\n  ", jsonHead)
-	} else if flags&flagNoDecorate == 0 {
-		fmt.Fprintf(out, "[%s]\n", head)
+		fmt.Fprintf(ap.out, "  \"%s\":[\n  ", jsonHead)
+	} else if ap.flags&flagNoDecorate == 0 {
+		fmt.Fprintf(ap.out, "[%s]\n", head)
 	}
 	*state = jsonArrayFirst
 }
 
-func arrayStop(state *int) {
-	if flags&flagJSON != 0 {
-		out.WriteString("]")
+func (ap *app) arrayStop(state *int) {
+	if ap.flags&flagJSON != 0 {
+		ap.out.WriteString("]")
 		*state = jsonNext
 	}
 }
@@ -164,6 +162,7 @@ const (
 )
 
 type outputField struct {
+	ap          *app
 	title, name string
 	option      uint
 	optionName  string
@@ -190,25 +189,25 @@ func (f *outputField) inSummary(format outputFormat, single, inputIsNetwork bool
 		((f.attrs&attrHideForSingleAddress != 0 && single) || f.attrs&attrSummaryJSONOnly != 0) {
 		return false
 	}
-	if flags&f.option != 0 {
+	if f.ap.flags&f.option != 0 {
 		return true
 	}
 	if f.attrs&(attrSummaryAlways|attrSummaryJSONOnly) != 0 {
 		return true
 	}
-	return f.attrs&attrSummaryWithAllInfo != 0 && flags&flagShowAllInfo != 0
+	return f.attrs&attrSummaryWithAllInfo != 0 && f.ap.flags&flagShowAllInfo != 0
 }
 
 func (f *outputField) showJSON(state *int) {
 	if !f.isList {
-		jsonPrintf(state, f.name, true, f.value)
+		f.ap.jsonPrintf(state, f.name, true, f.value)
 		return
 	}
-	arrayStart(state, f.title, f.name)
+	f.ap.arrayStart(state, f.title, f.name)
 	for _, v := range f.values {
-		jsonPrintf(state, "", false, v)
+		f.ap.jsonPrintf(state, "", false, v)
 	}
-	arrayStop(state)
+	f.ap.arrayStop(state)
 }
 
 func (f *outputField) showText() {
@@ -218,12 +217,12 @@ func (f *outputField) showText() {
 	}
 	if f.isList {
 		for _, s := range f.values {
-			prettyPrintf(f.title, s)
+			f.ap.prettyPrintf(f.title, s)
 		}
 	} else if f.attrs&attrHighlight != 0 {
-		prettyDistPrintf(f.title, v)
+		f.ap.prettyDistPrintf(f.title, v)
 	} else {
-		prettyPrintf(f.title, v)
+		f.ap.prettyPrintf(f.title, v)
 	}
 }
 
@@ -263,36 +262,36 @@ func (f *outputField) showVar(bare bool) {
 		switch {
 		case bare:
 			for _, v := range f.values {
-				out.WriteString(v + "\n")
+				f.ap.out.WriteString(v + "\n")
 			}
 		case len(f.values) == 1:
-			out.WriteString(f.name + "=" + shellValue(f.values[0], false) + "\n")
+			f.ap.out.WriteString(f.name + "=" + shellValue(f.values[0], false) + "\n")
 		default:
 			esc := make([]string, len(f.values))
 			for i, v := range f.values {
 				esc[i] = shellEscaped(v)
 			}
-			out.WriteString(f.name + "=\"" + strings.Join(esc, " ") + "\"\n")
+			f.ap.out.WriteString(f.name + "=\"" + strings.Join(esc, " ") + "\"\n")
 		}
 		return
 	}
 	if bare {
 		if f.attrs&attrVarQuoteAlways != 0 ||
 			(f.attrs&attrValueQuoteIfSpace != 0 && strings.Contains(f.value, " ")) {
-			out.WriteString("\"" + f.value + "\"\n")
+			f.ap.out.WriteString("\"" + f.value + "\"\n")
 		} else {
-			out.WriteString(f.value + "\n")
+			f.ap.out.WriteString(f.value + "\n")
 		}
 		return
 	}
-	out.WriteString(f.name + "=" + shellValue(f.value, f.attrs&attrVarQuoteAlways != 0) + "\n")
+	f.ap.out.WriteString(f.name + "=" + shellValue(f.value, f.attrs&attrVarQuoteAlways != 0) + "\n")
 }
 
 func (f *outputField) selected(format outputFormat, single, inputIsNetwork bool) bool {
-	if flags&flagShowModernInfo != 0 {
+	if f.ap.flags&flagShowModernInfo != 0 {
 		return f.inSummary(format, single, inputIsNetwork)
 	}
-	return f.hasValue() && flags&f.option != 0
+	return f.hasValue() && f.ap.flags&f.option != 0
 }
 
 func (f *outputField) show(state *int, format outputFormat) {
@@ -308,10 +307,10 @@ func (f *outputField) show(state *int, format outputFormat) {
 	}
 }
 
-func showInfoFields(info *ipInfo, format outputFormat, randomized bool) {
-	humanSummary := flags&flagShowModernInfo != 0 && format == formatHuman
+func (ap *app) showInfoFields(info *ipInfo, format outputFormat, randomized bool) {
+	humanSummary := ap.flags&flagShowModernInfo != 0 && format == formatHuman
 	width := 32
-	if flags&flagIPv6 != 0 {
+	if ap.flags&flagIPv6 != 0 {
 		width = 128
 	}
 	single := info.prefix == width
@@ -329,7 +328,7 @@ func showInfoFields(info *ipInfo, format outputFormat, randomized bool) {
 		radius = info.geo.accuracyRadius + " km"
 	}
 	hosts := ""
-	if flags&flagIPv6 != 0 && info.prefix < 112 {
+	if ap.flags&flagIPv6 != 0 && info.prefix < 112 {
 		hosts = fmt.Sprintf("2^(%d) = %s", 128-info.prefix, info.hosts)
 	}
 
@@ -375,17 +374,20 @@ func showInfoFields(info *ipInfo, format outputFormat, randomized bool) {
 	}
 
 	for i := range fields {
+		fields[i].ap = ap
+	}
+	for i := range fields {
 		f := &fields[i]
-		if f.attrs&attrRequiresSingleAddress != 0 && flags&f.option != 0 && !single {
-			errorf("ipcalc: %s requires a single address, not a network: %s/%d\n",
+		if f.attrs&attrRequiresSingleAddress != 0 && ap.flags&f.option != 0 && !single {
+			ap.errorf("ipcalc: %s requires a single address, not a network: %s/%d\n",
 				f.optionName, info.ip, info.prefix)
-			exit(exitFailure)
+			ap.exit(ap.exitFailure)
 		}
 	}
 
 	var state int
 	section := sectionNetwork
-	outputStart(&state)
+	ap.outputStart(&state)
 	for i := range fields {
 		f := &fields[i]
 		if !f.selected(format, single, inputIsNetwork) {
@@ -393,11 +395,11 @@ func showInfoFields(info *ipInfo, format outputFormat, randomized bool) {
 		}
 		if humanSummary && f.section != section {
 			if f.section == sectionGeo || !single {
-				outputSeparate()
+				ap.outputSeparate()
 			}
 			section = f.section
 		}
 		f.show(&state, format)
 	}
-	outputStop()
+	ap.outputStop()
 }

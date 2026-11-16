@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"fmt"
@@ -95,8 +95,8 @@ func (a u128) plus1Dec() string {
 	return v.Add(v, big.NewInt(1)).String()
 }
 
-func strToU128(s string) (u128, bool) {
-	if flags&flagIPv6 != 0 {
+func (ap *app) strToU128(s string) (u128, bool) {
+	if ap.flags&flagIPv6 != 0 {
 		a, ok := parseIPv6Strict(s)
 		if !ok {
 			return u128{}, false
@@ -118,8 +118,8 @@ func strToU128(s string) (u128, bool) {
 	return u128From64(uint64(ip4ToU32(a))), true
 }
 
-func (v u128) str() string {
-	if flags&flagIPv6 != 0 {
+func (v u128) str(v6 bool) string {
+	if v6 {
 		var b [16]byte
 		hi, lo := v.hi, v.lo
 		for i := 15; i >= 8; i-- {
@@ -136,34 +136,34 @@ func (v u128) str() string {
 }
 
 // defaultPrintf prints "title: value", or only the value with --no-decorate.
-func defaultPrintf(state *int, title, value string) {
+func (ap *app) defaultPrintf(state *int, title, value string) {
 	switch {
-	case flags&flagJSON != 0:
-		jsonPrintf(state, "", false, value)
-	case flags&flagNoDecorate != 0:
-		out.WriteString(value + "\n")
+	case ap.flags&flagJSON != 0:
+		ap.jsonPrintf(state, "", false, value)
+	case ap.flags&flagNoDecorate != 0:
+		ap.out.WriteString(value + "\n")
 	default:
-		colorPrintf(colBlue, title, value)
+		ap.colorPrintf(colBlue, title, value)
 	}
 }
 
-func distPrintf(state *int, title, jsonTitle, value string) {
+func (ap *app) distPrintf(state *int, title, jsonTitle, value string) {
 	switch {
-	case flags&flagJSON != 0:
-		jsonPrintf(state, jsonTitle, jsonTitle != "", value)
-	case flags&flagNoDecorate != 0:
-		out.WriteString(value + "\n")
+	case ap.flags&flagJSON != 0:
+		ap.jsonPrintf(state, jsonTitle, jsonTitle != "", value)
+	case ap.flags&flagNoDecorate != 0:
+		ap.out.WriteString(value + "\n")
 	default:
-		colorPrintf(colMag, title, value)
+		ap.colorPrintf(colMag, title, value)
 	}
 }
 
-func printNetwork(state *int, addr u128, prefix int) {
-	s := fmt.Sprintf("%s/%d", addr.str(), prefix)
-	if flags&flagNoDecorate == 0 || flags&flagJSON != 0 {
-		defaultPrintf(state, "Network:\t", s)
+func (ap *app) printNetwork(state *int, addr u128, prefix int) {
+	s := fmt.Sprintf("%s/%d", addr.str(ap.v6()), prefix)
+	if ap.flags&flagNoDecorate == 0 || ap.flags&flagJSON != 0 {
+		ap.defaultPrintf(state, "Network:\t", s)
 	} else {
-		out.WriteString(s + "\n")
+		ap.out.WriteString(s + "\n")
 	}
 }
 
@@ -179,11 +179,11 @@ func largestAlignedBlock(start, last u128, width uint) uint {
 	return hb
 }
 
-func printRange(state *int, start, last u128, width uint) {
+func (ap *app) printRange(state *int, start, last u128, width uint) {
 	one := u128From64(1)
 	for {
 		hb := largestAlignedBlock(start, last, width)
-		printNetwork(state, start, int(width-hb))
+		ap.printNetwork(state, start, int(width-hb))
 		start = start.or(lowMask(hb))
 		if start.cmp(last) >= 0 {
 			break
@@ -192,57 +192,57 @@ func printRange(state *int, start, last u128, width uint) {
 	}
 }
 
-func printHostSizedSubnet(state *int, idx int, req *splitReq, run *splitRun, width uint) {
+func (ap *app) printHostSizedSubnet(state *int, idx int, req *splitReq, run *splitRun, width uint) {
 	hb := width - uint(run.prefix)
 	one := u128From64(1)
 	mask := lowMask(width).sub(lowMask(hb))
 
 	if idx > 0 {
-		outputSeparate()
+		ap.outputSeparate()
 	}
-	defaultPrintf(state, fmt.Sprintf("%d. Requested size: ", idx+1), fmt.Sprintf("%d hosts", req.hosts))
-	printNetwork(state, run.start, run.prefix)
-	defaultPrintf(state, "Netmask:\t", fmt.Sprintf("%s = %d", mask.str(), run.prefix))
+	ap.defaultPrintf(state, fmt.Sprintf("%d. Requested size: ", idx+1), fmt.Sprintf("%d hosts", req.hosts))
+	ap.printNetwork(state, run.start, run.prefix)
+	ap.defaultPrintf(state, "Netmask:\t", fmt.Sprintf("%s = %d", mask.str(ap.v6()), run.prefix))
 
-	if flags&flagIPv6 != 0 {
-		defaultPrintf(state, "HostMin:\t", run.start.str())
-		defaultPrintf(state, "HostMax:\t", run.last.str())
-		defaultPrintf(state, "Hosts/Net:\t", ipv6Hosts(run.prefix))
+	if ap.flags&flagIPv6 != 0 {
+		ap.defaultPrintf(state, "HostMin:\t", run.start.str(ap.v6()))
+		ap.defaultPrintf(state, "HostMax:\t", run.last.str(ap.v6()))
+		ap.defaultPrintf(state, "Hosts/Net:\t", ipv6Hosts(run.prefix))
 	} else {
-		defaultPrintf(state, "Broadcast:\t", run.last.str())
-		defaultPrintf(state, "HostMin:\t", run.start.add(one).str())
-		defaultPrintf(state, "HostMax:\t", run.last.sub(one).str())
-		defaultPrintf(state, "Hosts/Net:\t", ipv4Hosts(run.prefix))
+		ap.defaultPrintf(state, "Broadcast:\t", run.last.str(ap.v6()))
+		ap.defaultPrintf(state, "HostMin:\t", run.start.add(one).str(ap.v6()))
+		ap.defaultPrintf(state, "HostMax:\t", run.last.sub(one).str(ap.v6()))
+		ap.defaultPrintf(state, "Hosts/Net:\t", ipv4Hosts(run.prefix))
 	}
 }
 
-func tooSmall(info *ipInfo) {
-	errorf("ipcalc: %s/%d is too small for the requested subnets\n", info.network, info.prefix)
-	exit(1)
+func (ap *app) tooSmall(info *ipInfo) {
+	ap.errorf("ipcalc: %s/%d is too small for the requested subnets\n", info.network, info.prefix)
+	ap.exit(1)
 }
 
-func showSplitNetworks(reqs []splitReq, info *ipInfo) {
+func (ap *app) showSplitNetworks(reqs []splitReq, info *ipInfo) {
 	width := uint(32)
-	if flags&flagIPv6 != 0 {
+	if ap.flags&flagIPv6 != 0 {
 		width = 128
 	}
 	n := len(reqs)
 	fill := n
 	hasSpace, hasGap, samePrefix := true, false, true
 	hostSized := reqs[0].hosts != 0
-	details := hostSized && flags&(flagJSON|flagNoDecorate) == 0
+	details := hostSized && ap.flags&(flagJSON|flagNoDecorate) == 0
 	var state int
 	one := u128From64(1)
 	var gapLast, cursor u128
 
-	net, ok := strToU128(info.network)
+	net, ok := ap.strToU128(info.network)
 	if !ok {
 		fam := "IPv4"
-		if flags&flagIPv6 != 0 {
+		if ap.flags&flagIPv6 != 0 {
 			fam = "IPv6"
 		}
-		errorf("ipcalc: bad %s address: %s\n", fam, info.network)
-		exit(1)
+		ap.errorf("ipcalc: bad %s address: %s\n", fam, info.network)
+		ap.exit(1)
 	}
 	last := net.or(lowMask(width - uint(info.prefix)))
 
@@ -251,12 +251,12 @@ func showSplitNetworks(reqs []splitReq, info *ipInfo) {
 
 	for i := 0; i < n; i++ {
 		if hostSized && reqs[i].prefix < info.prefix {
-			tooSmall(info)
+			ap.tooSmall(info)
 		}
 		if reqs[i].prefix < info.prefix || uint(reqs[i].prefix) > width {
-			errorf("Cannot subnet to /%d with this base network, use a prefix > /%d\n",
+			ap.errorf("Cannot subnet to /%d with this base network, use a prefix > /%d\n",
 				reqs[i].prefix, info.prefix)
-			exit(1)
+			ap.exit(1)
 		}
 		if reqs[i].prefix != reqs[0].prefix {
 			samePrefix = false
@@ -281,7 +281,7 @@ func showSplitNetworks(reqs []splitReq, info *ipInfo) {
 		hb := width - uint(req.prefix)
 
 		if !hasSpace || u128From64(req.count-1).cmp(last.sub(cursor).shr(hb)) > 0 {
-			tooSmall(info)
+			ap.tooSmall(info)
 		}
 		run.start = cursor
 		run.last = cursor.add(u128From64(req.count).shl(hb).sub(one))
@@ -311,7 +311,7 @@ func showSplitNetworks(reqs []splitReq, info *ipInfo) {
 			}
 		}
 		if !hasSpace {
-			tooSmall(info)
+			ap.tooSmall(info)
 		}
 		runs[fill] = splitRun{start: start, last: last, prefix: reqs[fill].prefix}
 	} else if hasSpace {
@@ -319,8 +319,8 @@ func showSplitNetworks(reqs []splitReq, info *ipInfo) {
 		hasGap = true
 	}
 
-	outputStart(&state)
-	arrayStart(&state, "Split networks", "SPLITNETWORK")
+	ap.outputStart(&state)
+	ap.arrayStart(&state, "Split networks", "SPLITNETWORK")
 
 	var netsM1 u128
 	for i := 0; i < n; i++ {
@@ -334,25 +334,25 @@ func showSplitNetworks(reqs []splitReq, info *ipInfo) {
 		netsM1 = netsM1.add(runs[i].last.sub(runs[i].start).shr(hb))
 
 		if details {
-			printHostSizedSubnet(&state, i, &reqs[i], &runs[i], width)
+			ap.printHostSizedSubnet(&state, i, &reqs[i], &runs[i], width)
 			continue
 		}
 		for addr := runs[i].start; ; addr = addr.add(step) {
-			printNetwork(&state, addr, runs[i].prefix)
+			ap.printNetwork(&state, addr, runs[i].prefix)
 			if addr.add(lm).cmp(runs[i].last) == 0 {
 				break
 			}
 		}
 	}
-	arrayStop(&state)
+	ap.arrayStop(&state)
 
-	if flags&flagNoDecorate == 0 || flags&flagJSON != 0 {
-		distPrintf(&state, "\nTotal:  \t", "NETS", netsM1.plus1Dec())
+	if ap.flags&flagNoDecorate == 0 || ap.flags&flagJSON != 0 {
+		ap.distPrintf(&state, "\nTotal:  \t", "NETS", netsM1.plus1Dec())
 		if samePrefix {
-			if flags&flagIPv6 != 0 {
-				distPrintf(&state, "Hosts/Net:\t", "ADDRESSES", ipv6Hosts(reqs[0].prefix))
+			if ap.flags&flagIPv6 != 0 {
+				ap.distPrintf(&state, "Hosts/Net:\t", "ADDRESSES", ipv6Hosts(reqs[0].prefix))
 			} else {
-				distPrintf(&state, "Hosts/Net:\t", "ADDRESSES", ipv4Hosts(reqs[0].prefix))
+				ap.distPrintf(&state, "Hosts/Net:\t", "ADDRESSES", ipv4Hosts(reqs[0].prefix))
 			}
 		}
 		if hostSized {
@@ -366,18 +366,18 @@ func showSplitNetworks(reqs []splitReq, info *ipInfo) {
 			for hb < width && lowMask(hb).cmp(neededM1) < 0 {
 				hb++
 			}
-			distPrintf(&state, "Needed size:\t", "NEEDED", neededM1.plus1Dec())
-			distPrintf(&state, "Used network:\t", "USEDNETWORK",
-				fmt.Sprintf("%s/%d", net.str(), width-hb))
+			ap.distPrintf(&state, "Needed size:\t", "NEEDED", neededM1.plus1Dec())
+			ap.distPrintf(&state, "Used network:\t", "USEDNETWORK",
+				fmt.Sprintf("%s/%d", net.str(ap.v6()), width-hb))
 		}
 		if hasGap {
-			outputSeparate()
-			arrayStart(&state, "Unused networks", "UNUSED")
-			printRange(&state, cursor, gapLast, width)
-			arrayStop(&state)
+			ap.outputSeparate()
+			ap.arrayStart(&state, "Unused networks", "UNUSED")
+			ap.printRange(&state, cursor, gapLast, width)
+			ap.arrayStop(&state)
 		}
 	}
-	outputStop()
+	ap.outputStop()
 }
 
 func isDigits(s string) bool {
@@ -393,47 +393,47 @@ func isDigits(s string) bool {
 }
 
 // [COUNT:]PREFIX, where PREFIX may also be a netmask
-func parseSplitReq(str string) (splitReq, bool) {
+func (ap *app) parseSplitReq(str string) (splitReq, bool) {
 	var req splitReq
 	prefixStr := str
 	if i := strings.IndexByte(str, ':'); i >= 0 {
 		cnt := str[:i]
 		v, err := strconv.ParseUint(cnt, 10, 64)
 		if !isDigits(cnt) || err != nil || v == 0 {
-			errorf("ipcalc: bad split count: %s\n", str)
+			ap.errorf("ipcalc: bad split count: %s\n", str)
 			return req, false
 		}
 		req.count = v
 		prefixStr = str[i+1:]
 	}
-	p := strToPrefix(prefixStr, true)
+	p := ap.strToPrefix(prefixStr, true)
 	if p < 0 {
 		fam := "IPv4"
-		if flags&flagIPv6 != 0 {
+		if ap.flags&flagIPv6 != 0 {
 			fam = "IPv6"
 		}
-		errorf("ipcalc: bad %s prefix: %s\n", fam, str)
+		ap.errorf("ipcalc: bad %s prefix: %s\n", fam, str)
 		return req, false
 	}
 	req.prefix = p
 	return req, true
 }
 
-func parseSplitHosts(str string, reqs []splitReq) ([]splitReq, bool) {
+func (ap *app) parseSplitHosts(str string, reqs []splitReq) ([]splitReq, bool) {
 	width := 32
-	if flags&flagIPv6 != 0 {
+	if ap.flags&flagIPv6 != 0 {
 		width = 128
 	}
 	for _, item := range strings.Split(str, ",") {
 		hosts, err := strconv.ParseUint(item, 10, 64)
 		if !isDigits(item) || err != nil || hosts == 0 {
-			errorf("ipcalc: bad host count: %s\n", str)
+			ap.errorf("ipcalc: bad host count: %s\n", str)
 			return nil, false
 		}
 		size := hosts
-		if flags&flagIPv6 == 0 {
+		if ap.flags&flagIPv6 == 0 {
 			if hosts > 0xFFFFFFFF-1 {
-				errorf("ipcalc: too many hosts requested: %d\n", hosts)
+				ap.errorf("ipcalc: too many hosts requested: %d\n", hosts)
 				return nil, false
 			}
 			size += 2

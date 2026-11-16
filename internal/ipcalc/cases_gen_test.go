@@ -1,6 +1,6 @@
 // Code generated from the ipcalc C project test list; DO NOT EDIT.
 
-package main
+package ipcalc
 
 var generatedCases = []testCase{
 	{name: "Split-Info",

@@ -1,6 +1,6 @@
 // Code generated from the Debian ipcalc outputs; DO NOT EDIT.
 
-package main
+package ipcalc
 
 var debianSplitHostsCases = []struct{ network, counts, golden string }{
 	{"192.168.0.0/24", "10,20,30", "192.168.0.0-24-10,20,30"},

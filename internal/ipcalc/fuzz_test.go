@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"fmt"
@@ -233,7 +233,6 @@ func FuzzArgs(f *testing.F) {
 				t.Skip() // random output, and slow to explore
 			}
 		}
-		fakeResolvers(t, "localhost")
 		ipcalc(t, opts{geo: true}, args...)
 	})
 }

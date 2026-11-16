@@ -2,33 +2,33 @@
 
 Go port of [ipcalc](https://gitlab.com/ipcalc/ipcalc), written to measure what a rewrite costs.
 Implemented: info mode (summary, `--all-info`, every field-selecting option),
-`-S`/`--split`/`--split-hosts` (`split.go`), `-d`/`--deaggregate` (`deaggregate.go`),
-`--equals`/`--subnet-of`/`--overlaps` (`compare.go`), `--binary` (`binary.go`), `-g`/`--geoinfo` and `--all-info` geo values (`geo.go`), `-c`, `--format`/`-j`/`--no-decorate`, `-r`, `-h`/`-o`, `-v`, `--help`/`--usage`,
-and a GNU `getopt_long` work-alike (`getopt.go`).
+`-S`/`--split`/`--split-hosts` (`internal/ipcalc/split.go`), `-d`/`--deaggregate` (`internal/ipcalc/deaggregate.go`),
+`--equals`/`--subnet-of`/`--overlaps` (`internal/ipcalc/compare.go`), `--binary` (`internal/ipcalc/binary.go`), `-g`/`--geoinfo` and `--all-info` geo values (`internal/ipcalc/geo.go`), `-c`, `--format`/`-j`/`--no-decorate`, `-r`, `-h`/`-o`, `-v`, `--help`/`--usage`,
+and a GNU `getopt_long` work-alike (`internal/ipcalc/getopt.go`).
 
 Geo lookup uses [maxminddb-golang](https://github.com/oschwald/maxminddb-golang), so
 there is no libmaxminddb, no `dlopen` and no geo-less build. The database
 paths default to `/usr/share/GeoIP/GeoLite2-*.mmdb` and are overridden at build
-time, as in the C build: `-ldflags "-X main.countryDB=... -X main.cityDB=... -X main.asnDB=..."`.
+time, as in the C build: `-ldflags "-X github.com/cleonte/go-ipcalc/internal/ipcalc.countryDB=... -X ...cityDB=... -X ...asnDB=..."`.
 
 ## Tests
 
 The tests are plain Go: `go test ./...`. They run the program in-process and
 need nothing else, not even a C compiler or Python.
 
-* `cases_gen_test.go` holds the 446 cases translated from the C project's
+* `internal/ipcalc/cases_gen_test.go` holds the 446 cases translated from the C project's
   Meson test list (`tests/meson.build`); their expected outputs are the files
-  in `testdata/`. The few tests that were shell pipelines (random networks,
+  in `internal/ipcalc/testdata/`. The few tests that were shell pipelines (random networks,
   `jq` and `eval` checks, the Debian comparison, the `LD_PRELOAD` fakes) are
-  written as Go tests in `ipcalc_test.go`.
-* `geodb_test.go` writes the MaxMind test databases from
-  `testdata/geo-*.json` (a Go port of `mkmmdb.py`).
+  written as Go tests in `internal/ipcalc/ipcalc_test.go`.
+* `internal/ipcalc/geodb_test.go` writes the MaxMind test databases from
+  `internal/ipcalc/testdata/geo-*.json` (a Go port of `mkmmdb.py`).
 * Name lookups are replaced by fakes, so no test depends on DNS.
-* `testdata/debian/` has the output of the Debian ipcalc for the
+* `internal/ipcalc/testdata/debian/` has the output of the Debian ipcalc for the
   `--split-hosts` comparison, recorded once, so Perl is not needed.
 
 ```sh
-go build -o ipcalc .
+go install github.com/cleonte/go-ipcalc/cmd/ipcalc@latest   # or: go build -o ipcalc ./cmd/ipcalc
 go test ./...
 ```
 

@@ -9,9 +9,9 @@ What differs from what the documents say:
 * **Source citations** (`Source:` lines) name C files and functions. They map
   to the Go files like this:
 
-  | C | Go |
+  | C | Go (in `internal/ipcalc/`) |
   |---|----|
-  | `ipcalc.c` (`main()`, option parsing, output helpers, `show_info_fields()`) | `main.go`, `getopt.go`, `output.go`, `env.go` |
+  | `ipcalc.c` (`main()`, option parsing, output helpers, `show_info_fields()`) | `cli.go`, `getopt.go`, `output.go`, `env.go` |
   | `ipcalc.c` (`get_ipv4_info()`, `get_ipv6_info()`, address tables) | `ipinfo.go` |
   | `ipcalc-reverse.c` | `reverse.go` |
   | `netsplit.c` | `split.go` |

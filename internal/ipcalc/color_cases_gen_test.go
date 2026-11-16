@@ -1,6 +1,6 @@
 // Code generated from the output of the C ipcalc on a terminal; DO NOT EDIT.
 
-package main
+package ipcalc
 
 var colorCases = []struct {
 	name, bin string

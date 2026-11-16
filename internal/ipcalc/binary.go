@@ -1,4 +1,4 @@
-package main
+package ipcalc
 
 import (
 	"fmt"
@@ -53,26 +53,27 @@ type row struct {
 }
 
 type line struct {
+	ap     *app
 	indent int
 	n      int
 	text   [maxCols]byte
 	style  [maxCols]byte
 }
 
-func colorFputs(color, s string) {
-	if colors && color != "" {
-		out.WriteString(color)
+func (ap *app) colorFputs(color, s string) {
+	if ap.colors && color != "" {
+		ap.out.WriteString(color)
 	}
-	out.WriteString(s)
-	if colors && color != "" {
-		out.WriteString(colReset)
+	ap.out.WriteString(s)
+	if ap.colors && color != "" {
+		ap.out.WriteString(colReset)
 	}
 }
 
 func getBit(addr []byte, k int) int { return int(addr[k/8]>>(7-uint(k%8))) & 1 }
 
-func newLine(indent int) *line {
-	l := &line{indent: indent}
+func (ap *app) newLine(indent int) *line {
+	l := &line{ap: ap, indent: indent}
 	for i := range l.text {
 		l.text[i] = ' '
 	}
@@ -123,7 +124,7 @@ func (l *line) print() {
 		l.n--
 	}
 	if l.n > 0 {
-		colorFputs("", strings.Repeat(" ", l.indent))
+		l.ap.colorFputs("", strings.Repeat(" ", l.indent))
 	}
 	col := 0
 	for col < l.n {
@@ -136,23 +137,23 @@ func (l *line) print() {
 				run.WriteByte(l.text[col])
 			}
 		}
-		colorFputs(styleColor(st), run.String())
+		l.ap.colorFputs(styleColor(st), run.String())
 	}
-	colorFputs("", "\n")
+	l.ap.colorFputs("", "\n")
 }
 
 func (lay *layout) bandColumns() int {
 	return lay.bandBits + lay.bandBits/lay.groupBits - 1
 }
 
-func outputColumns() int {
-	if env, ok := env.Getenv("COLUMNS"); ok {
+func (ap *app) outputColumns() int {
+	if env, ok := ap.env.Getenv("COLUMNS"); ok {
 		if v, ok := safeAtoi(env); ok && v > 0 {
 			return v
 		}
 	}
-	if env.StdoutTTY && env.StdoutFile != nil {
-		if w, _, err := term.GetSize(int(env.StdoutFile.Fd())); err == nil && w > 0 {
+	if ap.env.StdoutTTY && ap.env.StdoutFile != nil {
+		if w, _, err := term.GetSize(int(ap.env.StdoutFile.Fd())); err == nil && w > 0 {
 			return w
 		}
 	}
@@ -198,12 +199,12 @@ func (lay *layout) formatGroup(value uint, hostBits int) string {
 	return fmt.Sprintf("%d-%d", value, high)
 }
 
-func printBand(addr []byte, prefix, start int, lay *layout, indent int) {
+func (ap *app) printBand(addr []byte, prefix, start int, lay *layout, indent int) {
 	gbits := lay.groupBits
 	ngroups := lay.bandBits / gbits
 	sep := string(lay.sep)
 
-	l := newLine(indent)
+	l := ap.newLine(indent)
 	for g := 0; g < ngroups; g++ {
 		first := start + g*gbits
 		col := lay.groupColumn(g)
@@ -220,7 +221,7 @@ func printBand(addr []byte, prefix, start int, lay *layout, indent int) {
 	}
 	l.print()
 
-	l = newLine(indent)
+	l = ap.newLine(indent)
 	for g := 0; g < ngroups; g++ {
 		first := start + g*gbits
 		col := lay.groupColumn(g)
@@ -332,9 +333,9 @@ func makeSegments(prefix int, lay *layout, structured bool) []segment {
 	return segs
 }
 
-func printBrackets(segs []segment, start int, lay *layout, indent int) {
+func (ap *app) printBrackets(segs []segment, start int, lay *layout, indent int) {
 	end := start + lay.bandBits
-	l := newLine(indent)
+	l := ap.newLine(indent)
 	for i := range segs {
 		first, last := segs[i].first, segs[i].end-1
 		if segs[i].end <= start || segs[i].first >= end {
@@ -352,15 +353,15 @@ func printBrackets(segs []segment, start int, lay *layout, indent int) {
 	l.print()
 }
 
-func printDiagram(info *ipInfo, net []byte, lay *layout) {
+func (ap *app) printDiagram(info *ipInfo, net []byte, lay *layout) {
 	prefix := info.prefix
 	indent := 0
 	structured := isStructured(net, lay)
 
 	if prefix == lay.width {
-		colorFputs("", fmt.Sprintf("%-*s%s\n\n", labelCols, "Address:", info.ip))
+		ap.colorFputs("", fmt.Sprintf("%-*s%s\n\n", labelCols, "Address:", info.ip))
 	} else {
-		colorFputs("", fmt.Sprintf("%-*s%s/%d\n\n", labelCols, "Network:", info.network, prefix))
+		ap.colorFputs("", fmt.Sprintf("%-*s%s/%d\n\n", labelCols, "Network:", info.network, prefix))
 	}
 	if lay.width == 32 && prefix < 32 {
 		indent = detailsIndent
@@ -372,20 +373,20 @@ func printDiagram(info *ipInfo, net []byte, lay *layout) {
 			if structured {
 				what = "interface ID"
 			}
-			colorFputs(colDim, fmt.Sprintf("bits %d-%d: %s, all x", start, lay.width-1, what))
-			colorFputs("", "\n")
+			ap.colorFputs(colDim, fmt.Sprintf("bits %d-%d: %s, all x", start, lay.width-1, what))
+			ap.colorFputs("", "\n")
 			return
 		}
-		printBand(net, prefix, start, lay, indent)
+		ap.printBand(net, prefix, start, lay, indent)
 		if prefix < lay.width && prefix <= end {
-			printBrackets(makeSegments(prefix, lay, structured), start, lay, indent)
+			ap.printBrackets(makeSegments(prefix, lay, structured), start, lay, indent)
 		}
 	}
 }
 
-func printRow(r *row, prefix int) {
+func (ap *app) printRow(r *row, prefix int) {
 	ip4 := netip.AddrFrom4([4]byte{byte(r.value >> 24), byte(r.value >> 16), byte(r.value >> 8), byte(r.value)})
-	l := newLine(0)
+	l := ap.newLine(0)
 	l.putText(0, r.name+":", stylePlain)
 	l.putText(labelCols, ip4.String(), stylePlain)
 	for k := 0; k < 32; k++ {
@@ -425,11 +426,11 @@ func makeRows(info *ipInfo, net []byte, alwaysAddress bool) []row {
 	return rows
 }
 
-func printDetails(info *ipInfo, net []byte) {
+func (ap *app) printDetails(info *ipInfo, net []byte) {
 	rows := makeRows(info, net, false)
-	colorFputs("", "\n")
+	ap.colorFputs("", "\n")
 	for i := range rows {
-		printRow(&rows[i], info.prefix)
+		ap.printRow(&rows[i], info.prefix)
 	}
 }
 
@@ -441,46 +442,46 @@ func formatBits(addr []byte, nbits int) string {
 	return string(b)
 }
 
-func printVar(format outputFormat, state *int, name, value string) {
+func (ap *app) printVar(format outputFormat, state *int, name, value string) {
 	if format == formatShell {
-		out.WriteString(name + "=" + value + "\n")
+		ap.out.WriteString(name + "=" + value + "\n")
 	} else {
-		jsonPrintf(state, name, true, value)
+		ap.jsonPrintf(state, name, true, value)
 	}
 }
 
-func printVars(info *ipInfo, net []byte, lay *layout, format outputFormat, state *int) {
+func (ap *app) printVars(info *ipInfo, net []byte, lay *layout, format outputFormat, state *int) {
 	if info.prefix == lay.width {
-		printVar(format, state, "ADDRESS", formatBits(net, lay.width))
+		ap.printVar(format, state, "ADDRESS", formatBits(net, lay.width))
 		return
 	}
-	printVar(format, state, "PREFIX", fmt.Sprint(info.prefix))
+	ap.printVar(format, state, "PREFIX", fmt.Sprint(info.prefix))
 	if lay.width == 128 {
-		printVar(format, state, "NETWORK", formatBits(net, 128))
+		ap.printVar(format, state, "NETWORK", formatBits(net, 128))
 		return
 	}
 	for _, r := range makeRows(info, net, true) {
 		b := []byte{byte(r.value >> 24), byte(r.value >> 16), byte(r.value >> 8), byte(r.value)}
-		printVar(format, state, r.vr, formatBits(b, 32))
+		ap.printVar(format, state, r.vr, formatBits(b, 32))
 	}
 }
 
-func showBinary(info *ipInfo, format outputFormat) {
+func (ap *app) showBinary(info *ipInfo, format outputFormat) {
 	lay := &ipv4Layout
 	var net [16]byte
-	if flags&flagIPv6 != 0 {
+	if ap.flags&flagIPv6 != 0 {
 		lay = &ipv6Layout
 		a, ok := parseIPv6Strict(info.network)
 		if !ok {
-			errorf("ipcalc: cannot convert the address to binary\n")
-			exit(exitFailure)
+			ap.errorf("ipcalc: cannot convert the address to binary\n")
+			ap.exit(ap.exitFailure)
 		}
 		net = a.As16()
 	} else {
 		a, ok := parseIPv4Strict(info.network)
 		if !ok {
-			errorf("ipcalc: cannot convert the address to binary\n")
-			exit(exitFailure)
+			ap.errorf("ipcalc: cannot convert the address to binary\n")
+			ap.exit(ap.exitFailure)
 		}
 		b := a.As4()
 		copy(net[:], b[:])
@@ -489,23 +490,23 @@ func showBinary(info *ipInfo, format outputFormat) {
 	var state int
 	switch format {
 	case formatValue:
-		out.WriteString(formatBits(net[:], lay.width) + "\n")
+		ap.out.WriteString(formatBits(net[:], lay.width) + "\n")
 		return
 	case formatShell:
-		printVars(info, net[:], lay, format, &state)
+		ap.printVars(info, net[:], lay, format, &state)
 		return
 	case formatJSON:
-		outputStart(&state)
-		printVars(info, net[:], lay, format, &state)
-		outputStop()
+		ap.outputStart(&state)
+		ap.printVars(info, net[:], lay, format, &state)
+		ap.outputStop()
 		return
 	}
 
-	if flags&flagIPv6 != 0 && outputColumns() >= ipv6WideLayout.bandColumns() {
+	if ap.flags&flagIPv6 != 0 && ap.outputColumns() >= ipv6WideLayout.bandColumns() {
 		lay = &ipv6WideLayout
 	}
-	printDiagram(info, net[:], lay)
-	if flags&flagIPv6 == 0 && info.prefix < lay.width {
-		printDetails(info, net[:])
+	ap.printDiagram(info, net[:], lay)
+	if ap.flags&flagIPv6 == 0 && info.prefix < lay.width {
+		ap.printDetails(info, net[:])
 	}
 }
