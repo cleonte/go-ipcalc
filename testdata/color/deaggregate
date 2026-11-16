@@ -1,0 +1,5 @@
+[Deaggregated networks]
+Network:	10.0.0.1/32
+Network:	10.0.0.2/31
+Network:	10.0.0.4/30
+Network:	10.0.0.8/31

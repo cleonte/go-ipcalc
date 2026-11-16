@@ -43,6 +43,7 @@ type opts struct {
 	env       map[string]string
 	geo       bool
 	stderrTTY bool
+	stdoutTTY bool
 }
 
 func trimNL(s string) string { return strings.TrimRight(s, "\n") }
@@ -103,8 +104,15 @@ func ipcalc(t *testing.T, o opts, args ...string) result {
 		Stdout:    interleaved{&both, &so},
 		Stderr:    interleaved{&both, &se},
 		StderrTTY: o.stderrTTY,
+		StdoutTTY: o.stdoutTTY,
 	})
 	return result{code, so.String(), se.String(), both.String()}
+}
+
+// ipcalcTTY runs with stdout as a terminal.
+func ipcalcTTY(t *testing.T, o opts, args ...string) result {
+	o.stdoutTTY = true
+	return ipcalc(t, o, args...)
 }
 
 func (s step) opts(env map[string]string) opts { return opts{env: env, geo: s.bin == "geo"} }

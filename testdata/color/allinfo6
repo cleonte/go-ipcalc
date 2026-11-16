@@ -1,0 +1,17 @@
+Full Address:	[34mfe80:0000:0000:0000:021b:21ff:fe3a:5c7d
+[0mAddress:	[34mfe80::21b:21ff:fe3a:5c7d
+[0mFull Network:	[34mfe80:0000:0000:0000:0000:0000:0000:0000/64
+[0mNetwork:	[34mfe80::/64
+[0mNetmask:	[34mffff:ffff:ffff:ffff:: = 64
+[0mReverse DNS:	[34m0.0.0.0.0.0.0.0.0.0.0.0.0.8.e.f.ip6.arpa.
+[0m
+Address space:	[35mLink-Scoped Unicast
+[0mInterface ID:	[35m021b:21ff:fe3a:5c7d
+[0mEUI-64:		[35m00:1b:21:ff:fe:3a:5c:7d
+[0mMAC address:	[35m00:1b:21:3a:5c:7d
+[0mMAC scope:	[35muniversal
+[0mMAC type:	[35mindividual
+[0mHostMin:	[34mfe80::
+[0mHostMax:	[34mfe80::ffff:ffff:ffff:ffff
+[0mHosts/Net:	[34m2^(64) = 18446744073709551616
+[0m

@@ -1,0 +1,11 @@
+Full Address:	[34m2001:0db8:0000:0000:0000:0000:0000:0001
+[0mAddress:	[34m2001:db8::1
+[0mFull Network:	[34m2001:0db8:0000:0000:0000:0000:0000:0000/64
+[0mNetwork:	[34m2001:db8::/64
+[0mNetmask:	[34mffff:ffff:ffff:ffff:: = 64
+[0m
+Address space:	[35mDocumentation
+[0mHostMin:	[34m2001:db8::
+[0mHostMax:	[34m2001:db8::ffff:ffff:ffff:ffff
+[0mHosts/Net:	[34m2^(64) = 18446744073709551616
+[0m

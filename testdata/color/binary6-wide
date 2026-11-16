@@ -1,0 +1,5 @@
+Network:    2001:db8:abcd::/56
+
+            [34m2001[0m:            [34m0db8[0m:            [34mabcd[0m:       [2m0000-00ff[0m:       [2m0000-ffff[0m:       [2m0000-ffff[0m:       [2m0000-ffff[0m:       [2m0000-ffff[0m
+[34m0010000000000001[0m:[34m0000110110111000[0m:[34m1010101111001101[0m:[34m00000000[0m[2mxxxxxxxx[0m:[2mxxxxxxxxxxxxxxxx[0m:[2mxxxxxxxxxxxxxxxx[0m:[2mxxxxxxxxxxxxxxxx[0m:[2mxxxxxxxxxxxxxxxx[0m
+[34m└────────────────── routing prefix /56 ───────────────────┘[0m[2m└─ 8 ──┘[0m [2m└──────────────────────── interface ID 64 ────────────────────────┘[0m

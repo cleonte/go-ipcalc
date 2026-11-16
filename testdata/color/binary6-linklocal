@@ -1,0 +1,6 @@
+Network:    fe80::/10
+
+       [2mfe80-febf[0m:       [2m0000-ffff[0m:       [2m0000-ffff[0m:       [2m0000-ffff[0m
+[34m1111111010[0m[2mxxxxxx[0m:[2mxxxxxxxxxxxxxxxx[0m:[2mxxxxxxxxxxxxxxxx[0m:[2mxxxxxxxxxxxxxxxx[0m
+[34m└─ /10 ──┘[0m[2m└─────────────────────── host 118 ───────────────────────[0m
+[2mbits 64-127: host, all x[0m

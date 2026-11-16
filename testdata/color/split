@@ -1,0 +1,8 @@
+[Split networks]
+Network:	10.0.0.0/26
+Network:	10.0.0.64/26
+Network:	10.0.0.128/26
+Network:	10.0.0.192/26
+
+Total:  	4
+Hosts/Net:	62

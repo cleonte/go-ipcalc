@@ -1,0 +1,13 @@
+Address:	[34m192.168.2.7
+[0mNetwork:	[34m192.168.2.0/24
+[0mNetmask:	[34m255.255.255.0 = 24
+[0mWildcard:	[34m0.0.0.255
+[0mBroadcast:	[34m192.168.2.255
+[0mReverse DNS:	[34m2.168.192.in-addr.arpa.
+[0m
+Address space:	[35mPrivate Use
+[0mAddress class:	[35mClass C
+[0mHostMin:	[34m192.168.2.1
+[0mHostMax:	[34m192.168.2.254
+[0mHosts/Net:	[34m254
+[0m
