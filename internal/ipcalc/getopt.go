@@ -28,7 +28,6 @@ type getopt struct {
 	pos      int // index into args
 	nextChar int // position inside a bundled short option cluster
 	Rest     []string
-	done     bool
 	opterr   bool
 }
 
