@@ -77,7 +77,7 @@ func (g *Parser) warn(format string, a ...any) {
 	}
 }
 
-// Next returns the next option; ok is false when the options are exhausted..
+// Next returns the next option; ok is false when the options are exhausted.
 func (g *Parser) Next() (Result, bool) {
 	if g.nextChar > 0 {
 		return g.nextShort(), true
