@@ -28,7 +28,9 @@ import (
 	"github.com/cleonte/go-ipcalc/internal/getopt"
 )
 
-// version is set at build time: -ldflags "-X main.version=1.2.0". Without
+// version is set at build time:
+// -ldflags "-X github.com/cleonte/go-ipcalc/internal/ipcalc.version=0.1.4".
+// Without
 // it, the module version of the build (go install) or "dev" is used.
 var version string
 
