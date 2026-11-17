@@ -1,5 +1,9 @@
 # ipcalc Requirements
 
+> In this repository the `Source:` lines are references to the upstream C
+> implementation (ipcalc 1.2.0), kept verbatim so the documents stay
+> mergeable with upstream. `GO-PORT.md` maps the C files to the Go files.
+
 > These documents come from the C implementation; see `GO-PORT.md` for what
 > differs in the Go port.
 
