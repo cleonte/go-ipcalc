@@ -39,3 +39,16 @@ compiler, Python or Perl is needed. New cases go in the table in
 
 Behavior that is wrong in upstream ipcalc as well should be reported there
 first; this port tracks upstream.
+
+## Releasing
+
+1. Add a `* go-ipcalc X.Y.Z (released DATE)` section to `NEWS`; it becomes the
+   release notes.
+2. Tag and push: `git tag -a vX.Y.Z -m "go-ipcalc X.Y.Z" && git push origin vX.Y.Z`.
+
+The release workflow builds the archives, attests them, publishes the release
+and then updates the formula in `cleonte/homebrew-tap` (`brew install
+cleonte/tap/go-ipcalc`) from `packaging/homebrew/`. The last step needs the
+repository secret `HOMEBREW_TAP_TOKEN`, a token that can push to the tap; without
+it the workflow skips the step and the formula must be updated by hand with
+`packaging/homebrew/render.sh VERSION SHA256SUMS`.

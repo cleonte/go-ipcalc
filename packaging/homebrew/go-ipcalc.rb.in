@@ -1,0 +1,38 @@
+class GoIpcalc < Formula
+  desc "Go port of ipcalc: IPv4/IPv6 network calculator"
+  homepage "https://github.com/cleonte/go-ipcalc"
+  license "GPL-2.0-only"
+
+  on_macos do
+    on_arm do
+      url "https://github.com/cleonte/go-ipcalc/releases/download/v@VERSION@/ipcalc_@VERSION@_darwin_arm64.tar.gz"
+      sha256 "@SHA_darwin_arm64@"
+    end
+    on_intel do
+      url "https://github.com/cleonte/go-ipcalc/releases/download/v@VERSION@/ipcalc_@VERSION@_darwin_amd64.tar.gz"
+      sha256 "@SHA_darwin_amd64@"
+    end
+  end
+  on_linux do
+    on_arm do
+      url "https://github.com/cleonte/go-ipcalc/releases/download/v@VERSION@/ipcalc_@VERSION@_linux_arm64.tar.gz"
+      sha256 "@SHA_linux_arm64@"
+    end
+    on_intel do
+      url "https://github.com/cleonte/go-ipcalc/releases/download/v@VERSION@/ipcalc_@VERSION@_linux_amd64.tar.gz"
+      sha256 "@SHA_linux_amd64@"
+    end
+  end
+
+  conflicts_with "ipcalc", because: "both install an `ipcalc` binary"
+
+  def install
+    bin.install "ipcalc"
+    man1.install "ipcalc.1"
+  end
+
+  test do
+    assert_match "Network:\t192.168.1.0/24", shell_output("#{bin}/ipcalc 192.168.1.10/24")
+    assert_match version.to_s, shell_output("#{bin}/ipcalc -v")
+  end
+end
