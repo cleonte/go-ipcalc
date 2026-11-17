@@ -18,6 +18,8 @@ package ipcalc
 import (
 	"fmt"
 	"strings"
+
+	"github.com/cleonte/go-ipcalc/internal/u128"
 )
 
 func isSpace(c byte) bool {
@@ -110,32 +112,32 @@ func (ap *app) deaggregateV6(s1, s2 string) {
 	}
 	base, _ := ap.strToU128(s1)
 	end, _ := ap.strToU128(s2)
-	if base.cmp(end) > 0 {
+	if base.Cmp(end) > 0 {
 		ap.errorf("ipcalc: bad IPv6 range\n")
 		ap.exit(1)
 	}
 
-	one := u128From64(1)
+	one := u128.From64(1)
 	var state int
 	ap.outputStart(&state)
 	ap.arrayStart(&state, "Deaggregated networks", "DEAGGREGATEDNETWORK")
 	for {
 		step := uint(0)
-		for step < 128 && base.and(one.shl(step)).isZero() {
-			if base.or(lowMask(step+1)).cmp(end) > 0 {
+		for step < 128 && base.And(one.Lsh(step)).IsZero() {
+			if base.Or(u128.LowMask(step+1)).Cmp(end) > 0 {
 				break
 			}
 			step++
 		}
-		ap.defaultPrintf(&state, "Network:\t", fmt.Sprintf("%s/%d", base.str(ap.v6()), 128-step))
+		ap.defaultPrintf(&state, "Network:\t", fmt.Sprintf("%s/%d", addrString(base, ap.v6()), 128-step))
 
 		// stop at the network holding the end; advancing past the last
 		// address of the IPv6 space would wrap around
-		tmp := base.or(lowMask(step))
-		if tmp.cmp(end) >= 0 {
+		tmp := base.Or(u128.LowMask(step))
+		if tmp.Cmp(end) >= 0 {
 			break
 		}
-		base = tmp.add(one)
+		base = tmp.Add(one)
 	}
 	ap.arrayStop(&state)
 	ap.outputStop()

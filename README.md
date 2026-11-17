@@ -86,7 +86,7 @@ citations to the Go files.
 A derivative work of ipcalc, licensed under GPL-2.0-only (see `COPYING`;
 each source file carries an SPDX header). Copyright (c) 1997-2015 Red Hat,
 Inc.; (c) 2026 Nikos Mavrogiannopoulos and the other ipcalc authors.
-`split.go` follows `netsplit.c`, which is BSD-3-Clause licensed:
+`split.go` and `internal/u128` follow `netsplit.c`, which is BSD-3-Clause licensed:
 (c) 2003-2016 Simon Ekstrand, 2010-2016 Joachim Nilsson, 2016 Nikos
 Mavrogiannopoulos. This is an independent port, not an official part of the
 ipcalc project.

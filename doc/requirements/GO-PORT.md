@@ -9,12 +9,12 @@ What differs from what the documents say:
 * **Source citations** (`Source:` lines) name C files and functions. They map
   to the Go files like this:
 
-  | C | Go (in `internal/ipcalc/`) |
+  | C | Go (in `internal/ipcalc/` unless a package is given) |
   |---|----|
-  | `ipcalc.c` (`main()`, option parsing, output helpers, `show_info_fields()`) | `cli.go`, `getopt.go`, `output.go`, `env.go` |
+  | `ipcalc.c` (`main()`, option parsing, output helpers, `show_info_fields()`) | `cli.go`, `output.go`, `env.go`; `internal/getopt` (the `getopt_long` work-alike) |
   | `ipcalc.c` (`get_ipv4_info()`, `get_ipv6_info()`, address tables) | `ipinfo.go` |
   | `ipcalc-reverse.c` | `reverse.go` |
-  | `netsplit.c` | `split.go` |
+  | `netsplit.c` | `split.go`; `internal/u128` (128-bit arithmetic) |
   | `deaggregate.c`, `ipv6.c` | `deaggregate.go` |
   | `netcompare.c` | `compare.go` |
   | `binary.c` | `binary.go` |

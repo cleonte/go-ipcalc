@@ -31,11 +31,11 @@ package ipcalc
 
 import (
 	"fmt"
-	"math/big"
-	"math/bits"
 	"net/netip"
 	"strconv"
 	"strings"
+
+	"github.com/cleonte/go-ipcalc/internal/u128"
 )
 
 type splitReq struct {
@@ -45,112 +45,37 @@ type splitReq struct {
 }
 
 type splitRun struct {
-	start, last u128
+	start, last u128.Uint
 	prefix      int
 }
 
-// u128 holds an address of either family; IPv4 uses the low 32 bits.
-type u128 struct{ hi, lo uint64 }
-
-func u128From64(v uint64) u128 { return u128{0, v} }
-
-func (a u128) add(b u128) u128 {
-	lo, c := bits.Add64(a.lo, b.lo, 0)
-	hi, _ := bits.Add64(a.hi, b.hi, c)
-	return u128{hi, lo}
-}
-
-func (a u128) sub(b u128) u128 {
-	lo, bo := bits.Sub64(a.lo, b.lo, 0)
-	hi, _ := bits.Sub64(a.hi, b.hi, bo)
-	return u128{hi, lo}
-}
-
-func (a u128) cmp(b u128) int {
-	switch {
-	case a.hi != b.hi:
-		if a.hi < b.hi {
-			return -1
-		}
-		return 1
-	case a.lo != b.lo:
-		if a.lo < b.lo {
-			return -1
-		}
-		return 1
-	}
-	return 0
-}
-
-func (a u128) isZero() bool    { return a.hi == 0 && a.lo == 0 }
-func (a u128) and(b u128) u128 { return u128{a.hi & b.hi, a.lo & b.lo} }
-func (a u128) or(b u128) u128  { return u128{a.hi | b.hi, a.lo | b.lo} }
-
-func (a u128) shl(n uint) u128 {
-	switch {
-	case n == 0:
-		return a
-	case n < 64:
-		return u128{a.hi<<n | a.lo>>(64-n), a.lo << n}
-	case n < 128:
-		return u128{a.lo << (n - 64), 0}
-	}
-	return u128{}
-}
-
-func (a u128) shr(n uint) u128 {
-	switch {
-	case n == 0:
-		return a
-	case n < 64:
-		return u128{a.hi >> n, a.lo>>n | a.hi<<(64-n)}
-	case n < 128:
-		return u128{0, a.hi >> (n - 64)}
-	}
-	return u128{}
-}
-
-func lowMask(n uint) u128 {
-	if n >= 128 {
-		return u128{^uint64(0), ^uint64(0)}
-	}
-	return u128From64(1).shl(n).sub(u128From64(1))
-}
-
-func (a u128) plus1Dec() string {
-	v := new(big.Int).SetUint64(a.hi)
-	v.Lsh(v, 64)
-	v.Or(v, new(big.Int).SetUint64(a.lo))
-	return v.Add(v, big.NewInt(1)).String()
-}
-
-func (ap *app) strToU128(s string) (u128, bool) {
+func (ap *app) strToU128(s string) (u128.Uint, bool) {
 	if ap.flags&flagIPv6 != 0 {
 		a, ok := parseIPv6Strict(s)
 		if !ok {
-			return u128{}, false
+			return u128.Uint{}, false
 		}
 		b := a.As16()
-		var v u128
+		var v u128.Uint
 		for i := 0; i < 8; i++ {
-			v.hi = v.hi<<8 | uint64(b[i])
+			v.Hi = v.Hi<<8 | uint64(b[i])
 		}
 		for i := 8; i < 16; i++ {
-			v.lo = v.lo<<8 | uint64(b[i])
+			v.Lo = v.Lo<<8 | uint64(b[i])
 		}
 		return v, true
 	}
 	a, ok := parseIPv4Strict(s)
 	if !ok {
-		return u128{}, false
+		return u128.Uint{}, false
 	}
-	return u128From64(uint64(ip4ToU32(a))), true
+	return u128.From64(uint64(ip4ToU32(a))), true
 }
 
-func (v u128) str(v6 bool) string {
+func addrString(v u128.Uint, v6 bool) string {
 	if v6 {
 		var b [16]byte
-		hi, lo := v.hi, v.lo
+		hi, lo := v.Hi, v.Lo
 		for i := 15; i >= 8; i-- {
 			b[i] = byte(lo)
 			lo >>= 8
@@ -161,7 +86,7 @@ func (v u128) str(v6 bool) string {
 		}
 		return ntop6(b)
 	}
-	return netip.AddrFrom4([4]byte{byte(v.lo >> 24), byte(v.lo >> 16), byte(v.lo >> 8), byte(v.lo)}).String()
+	return netip.AddrFrom4([4]byte{byte(v.Lo >> 24), byte(v.Lo >> 16), byte(v.Lo >> 8), byte(v.Lo)}).String()
 }
 
 // defaultPrintf prints "title: value", or only the value with --no-decorate.
@@ -187,8 +112,8 @@ func (ap *app) distPrintf(state *int, title, jsonTitle, value string) {
 	}
 }
 
-func (ap *app) printNetwork(state *int, addr u128, prefix int) {
-	s := fmt.Sprintf("%s/%d", addr.str(ap.v6()), prefix)
+func (ap *app) printNetwork(state *int, addr u128.Uint, prefix int) {
+	s := fmt.Sprintf("%s/%d", addrString(addr, ap.v6()), prefix)
 	if ap.flags&flagNoDecorate == 0 || ap.flags&flagJSON != 0 {
 		ap.defaultPrintf(state, "Network:\t", s)
 	} else {
@@ -196,11 +121,11 @@ func (ap *app) printNetwork(state *int, addr u128, prefix int) {
 	}
 }
 
-func largestAlignedBlock(start, last u128, width uint) uint {
-	one := u128From64(1)
+func largestAlignedBlock(start, last u128.Uint, width uint) uint {
+	one := u128.From64(1)
 	var hb uint
-	for hb < width && start.and(one.shl(hb)).isZero() {
-		if start.or(lowMask(hb+1)).cmp(last) > 0 {
+	for hb < width && start.And(one.Lsh(hb)).IsZero() {
+		if start.Or(u128.LowMask(hb+1)).Cmp(last) > 0 {
 			break
 		}
 		hb++
@@ -208,39 +133,39 @@ func largestAlignedBlock(start, last u128, width uint) uint {
 	return hb
 }
 
-func (ap *app) printRange(state *int, start, last u128, width uint) {
-	one := u128From64(1)
+func (ap *app) printRange(state *int, start, last u128.Uint, width uint) {
+	one := u128.From64(1)
 	for {
 		hb := largestAlignedBlock(start, last, width)
 		ap.printNetwork(state, start, int(width-hb))
-		start = start.or(lowMask(hb))
-		if start.cmp(last) >= 0 {
+		start = start.Or(u128.LowMask(hb))
+		if start.Cmp(last) >= 0 {
 			break
 		}
-		start = start.add(one)
+		start = start.Add(one)
 	}
 }
 
 func (ap *app) printHostSizedSubnet(state *int, idx int, req *splitReq, run *splitRun, width uint) {
 	hb := width - uint(run.prefix)
-	one := u128From64(1)
-	mask := lowMask(width).sub(lowMask(hb))
+	one := u128.From64(1)
+	mask := u128.LowMask(width).Sub(u128.LowMask(hb))
 
 	if idx > 0 {
 		ap.outputSeparate()
 	}
 	ap.defaultPrintf(state, fmt.Sprintf("%d. Requested size: ", idx+1), fmt.Sprintf("%d hosts", req.hosts))
 	ap.printNetwork(state, run.start, run.prefix)
-	ap.defaultPrintf(state, "Netmask:\t", fmt.Sprintf("%s = %d", mask.str(ap.v6()), run.prefix))
+	ap.defaultPrintf(state, "Netmask:\t", fmt.Sprintf("%s = %d", addrString(mask, ap.v6()), run.prefix))
 
 	if ap.flags&flagIPv6 != 0 {
-		ap.defaultPrintf(state, "HostMin:\t", run.start.str(ap.v6()))
-		ap.defaultPrintf(state, "HostMax:\t", run.last.str(ap.v6()))
+		ap.defaultPrintf(state, "HostMin:\t", addrString(run.start, ap.v6()))
+		ap.defaultPrintf(state, "HostMax:\t", addrString(run.last, ap.v6()))
 		ap.defaultPrintf(state, "Hosts/Net:\t", ipv6Hosts(run.prefix))
 	} else {
-		ap.defaultPrintf(state, "Broadcast:\t", run.last.str(ap.v6()))
-		ap.defaultPrintf(state, "HostMin:\t", run.start.add(one).str(ap.v6()))
-		ap.defaultPrintf(state, "HostMax:\t", run.last.sub(one).str(ap.v6()))
+		ap.defaultPrintf(state, "Broadcast:\t", addrString(run.last, ap.v6()))
+		ap.defaultPrintf(state, "HostMin:\t", addrString(run.start.Add(one), ap.v6()))
+		ap.defaultPrintf(state, "HostMax:\t", addrString(run.last.Sub(one), ap.v6()))
 		ap.defaultPrintf(state, "Hosts/Net:\t", ipv4Hosts(run.prefix))
 	}
 }
@@ -261,8 +186,8 @@ func (ap *app) showSplitNetworks(reqs []splitReq, info *ipInfo) {
 	hostSized := reqs[0].hosts != 0
 	details := hostSized && ap.flags&(flagJSON|flagNoDecorate) == 0
 	var state int
-	one := u128From64(1)
-	var gapLast, cursor u128
+	one := u128.From64(1)
+	var gapLast, cursor u128.Uint
 
 	net, ok := ap.strToU128(info.network)
 	if !ok {
@@ -273,7 +198,7 @@ func (ap *app) showSplitNetworks(reqs []splitReq, info *ipInfo) {
 		ap.errorf("ipcalc: bad %s address: %s\n", fam, info.network)
 		ap.exit(1)
 	}
-	last := net.or(lowMask(width - uint(info.prefix)))
+	last := net.Or(u128.LowMask(width - uint(info.prefix)))
 
 	runs := make([]splitRun, n)
 	order := make([]int, 0, n)
@@ -309,33 +234,33 @@ func (ap *app) showSplitNetworks(reqs []splitReq, info *ipInfo) {
 		run := &runs[oi]
 		hb := width - uint(req.prefix)
 
-		if !hasSpace || u128From64(req.count-1).cmp(last.sub(cursor).shr(hb)) > 0 {
+		if !hasSpace || u128.From64(req.count-1).Cmp(last.Sub(cursor).Rsh(hb)) > 0 {
 			ap.tooSmall(info)
 		}
 		run.start = cursor
-		run.last = cursor.add(u128From64(req.count).shl(hb).sub(one))
+		run.last = cursor.Add(u128.From64(req.count).Lsh(hb).Sub(one))
 		run.prefix = req.prefix
 
-		if run.last.cmp(last) == 0 {
+		if run.last.Cmp(last) == 0 {
 			hasSpace = false
 		} else {
-			cursor = run.last.add(one)
+			cursor = run.last.Add(one)
 		}
 	}
 
 	if fill < n {
 		start := cursor
 		hb := width - uint(reqs[fill].prefix)
-		lm := lowMask(hb)
-		rem := cursor.and(lm)
+		lm := u128.LowMask(hb)
+		rem := cursor.And(lm)
 
-		if hasSpace && !rem.isZero() {
-			gap := lm.sub(rem).add(one)
-			if last.sub(cursor).cmp(gap) < 0 {
+		if hasSpace && !rem.IsZero() {
+			gap := lm.Sub(rem).Add(one)
+			if last.Sub(cursor).Cmp(gap) < 0 {
 				hasSpace = false
 			} else {
-				start = cursor.add(gap)
-				gapLast = start.sub(one)
+				start = cursor.Add(gap)
+				gapLast = start.Sub(one)
 				hasGap = true
 			}
 		}
@@ -351,24 +276,24 @@ func (ap *app) showSplitNetworks(reqs []splitReq, info *ipInfo) {
 	ap.outputStart(&state)
 	ap.arrayStart(&state, "Split networks", "SPLITNETWORK")
 
-	var netsM1 u128
+	var netsM1 u128.Uint
 	for i := 0; i < n; i++ {
 		hb := width - uint(runs[i].prefix)
-		lm := lowMask(hb)
-		step := one.shl(hb)
+		lm := u128.LowMask(hb)
+		step := one.Lsh(hb)
 
 		if i > 0 {
-			netsM1 = netsM1.add(one)
+			netsM1 = netsM1.Add(one)
 		}
-		netsM1 = netsM1.add(runs[i].last.sub(runs[i].start).shr(hb))
+		netsM1 = netsM1.Add(runs[i].last.Sub(runs[i].start).Rsh(hb))
 
 		if details {
 			ap.printHostSizedSubnet(&state, i, &reqs[i], &runs[i], width)
 			continue
 		}
-		for addr := runs[i].start; ; addr = addr.add(step) {
+		for addr := runs[i].start; ; addr = addr.Add(step) {
 			ap.printNetwork(&state, addr, runs[i].prefix)
-			if addr.add(lm).cmp(runs[i].last) == 0 {
+			if addr.Add(lm).Cmp(runs[i].last) == 0 {
 				break
 			}
 		}
@@ -376,7 +301,7 @@ func (ap *app) showSplitNetworks(reqs []splitReq, info *ipInfo) {
 	ap.arrayStop(&state)
 
 	if ap.flags&flagNoDecorate == 0 || ap.flags&flagJSON != 0 {
-		ap.distPrintf(&state, "\nTotal:  \t", "NETS", netsM1.plus1Dec())
+		ap.distPrintf(&state, "\nTotal:  \t", "NETS", netsM1.PlusOneString())
 		if samePrefix {
 			if ap.flags&flagIPv6 != 0 {
 				ap.distPrintf(&state, "Hosts/Net:\t", "ADDRESSES", ipv6Hosts(reqs[0].prefix))
@@ -385,19 +310,19 @@ func (ap *app) showSplitNetworks(reqs []splitReq, info *ipInfo) {
 			}
 		}
 		if hostSized {
-			var neededM1 u128
+			var neededM1 u128.Uint
 			if hasSpace {
-				neededM1 = cursor.sub(net).sub(one)
+				neededM1 = cursor.Sub(net).Sub(one)
 			} else {
-				neededM1 = last.sub(net)
+				neededM1 = last.Sub(net)
 			}
 			hb := uint(0)
-			for hb < width && lowMask(hb).cmp(neededM1) < 0 {
+			for hb < width && u128.LowMask(hb).Cmp(neededM1) < 0 {
 				hb++
 			}
-			ap.distPrintf(&state, "Needed size:\t", "NEEDED", neededM1.plus1Dec())
+			ap.distPrintf(&state, "Needed size:\t", "NEEDED", neededM1.PlusOneString())
 			ap.distPrintf(&state, "Used network:\t", "USEDNETWORK",
-				fmt.Sprintf("%s/%d", net.str(ap.v6()), width-hb))
+				fmt.Sprintf("%s/%d", addrString(net, ap.v6()), width-hb))
 		}
 		if hasGap {
 			ap.outputSeparate()

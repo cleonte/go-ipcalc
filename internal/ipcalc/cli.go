@@ -24,6 +24,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/cleonte/go-ipcalc/internal/getopt"
 )
 
 // version is set at build time: -ldflags "-X main.version=1.2.0". Without
@@ -100,43 +102,43 @@ const (
 	optBinary
 )
 
-var longOptions = []longOpt{
-	{"check", false, 'c'},
-	{"equals", true, optEquals},
-	{"subnet-of", true, optSubnetOf},
-	{"overlaps", true, optOverlaps},
-	{"random-private", true, 'r'},
-	{"split", true, 'S'},
-	{"split-hosts", true, optSplitHosts},
-	{"deaggregate", true, 'd'},
-	{"binary", false, optBinary},
-	{"info", false, 'i'},
-	{"all-info", false, optAllInfo},
-	{"ipv4", false, '4'},
-	{"ipv6", false, '6'},
-	{"address", false, 'a'},
-	{"broadcast", false, 'b'},
-	{"hostname", false, 'h'},
-	{"lookup-host", true, 'o'},
-	{"geoinfo", false, 'g'},
-	{"reverse-dns", false, optReverse},
-	{"netmask", false, 'm'},
-	{"network", false, 'n'},
-	{"cidr", false, optCIDR},
-	{"wildcard", false, optWildcard},
-	{"prefix", false, 'p'},
-	{"class-prefix", false, optClassPrefix},
-	{"minaddr", false, optMinaddr},
-	{"maxaddr", false, optMaxaddr},
-	{"addresses", false, optAddresses},
-	{"addrspace", false, optAddrspace},
-	{"silent", false, 's'},
-	{"no-decorate", false, optNoDecorate},
-	{"json", false, 'j'},
-	{"format", true, optFormat},
-	{"version", false, 'v'},
-	{"help", false, optHelp},
-	{"usage", false, optUsage},
+var longOptions = []getopt.LongOption{
+	{Name: "check", HasArg: false, Val: 'c'},
+	{Name: "equals", HasArg: true, Val: optEquals},
+	{Name: "subnet-of", HasArg: true, Val: optSubnetOf},
+	{Name: "overlaps", HasArg: true, Val: optOverlaps},
+	{Name: "random-private", HasArg: true, Val: 'r'},
+	{Name: "split", HasArg: true, Val: 'S'},
+	{Name: "split-hosts", HasArg: true, Val: optSplitHosts},
+	{Name: "deaggregate", HasArg: true, Val: 'd'},
+	{Name: "binary", HasArg: false, Val: optBinary},
+	{Name: "info", HasArg: false, Val: 'i'},
+	{Name: "all-info", HasArg: false, Val: optAllInfo},
+	{Name: "ipv4", HasArg: false, Val: '4'},
+	{Name: "ipv6", HasArg: false, Val: '6'},
+	{Name: "address", HasArg: false, Val: 'a'},
+	{Name: "broadcast", HasArg: false, Val: 'b'},
+	{Name: "hostname", HasArg: false, Val: 'h'},
+	{Name: "lookup-host", HasArg: true, Val: 'o'},
+	{Name: "geoinfo", HasArg: false, Val: 'g'},
+	{Name: "reverse-dns", HasArg: false, Val: optReverse},
+	{Name: "netmask", HasArg: false, Val: 'm'},
+	{Name: "network", HasArg: false, Val: 'n'},
+	{Name: "cidr", HasArg: false, Val: optCIDR},
+	{Name: "wildcard", HasArg: false, Val: optWildcard},
+	{Name: "prefix", HasArg: false, Val: 'p'},
+	{Name: "class-prefix", HasArg: false, Val: optClassPrefix},
+	{Name: "minaddr", HasArg: false, Val: optMinaddr},
+	{Name: "maxaddr", HasArg: false, Val: optMaxaddr},
+	{Name: "addresses", HasArg: false, Val: optAddresses},
+	{Name: "addrspace", HasArg: false, Val: optAddrspace},
+	{Name: "silent", HasArg: false, Val: 's'},
+	{Name: "no-decorate", HasArg: false, Val: optNoDecorate},
+	{Name: "json", HasArg: false, Val: 'j'},
+	{Name: "format", HasArg: true, Val: optFormat},
+	{Name: "version", HasArg: false, Val: 'v'},
+	{Name: "help", HasArg: false, Val: optHelp},
+	{Name: "usage", HasArg: false, Val: optUsage},
 }
 
 var fieldSelectingOptions = map[int]uint{
@@ -448,36 +450,36 @@ func (ap *app) realMain() {
 		userFlags                                    uint
 	)
 
-	g := newGetopt(ap, ap.env.Args, "S:cr:i46abho:gmnpjsvd:", longOptions)
+	g := getopt.New(ap.env.Prog, ap.errOut, ap.env.Args, "S:cr:i46abho:gmnpjsvd:", longOptions)
 	for {
-		r, ok := g.next()
+		r, ok := g.Next()
 		if !ok {
 			break
 		}
-		switch c := r.c; c {
+		switch c := r.Opt; c {
 		case 'c':
 			app |= appCheck
 		case optEquals, optSubnetOf, optOverlaps:
 			app |= appCompare
-			cmpStr = r.arg
+			cmpStr = r.Arg
 			cmpOp = map[int]int{optEquals: cmpEquals, optSubnetOf: cmpSubnetOf, optOverlaps: cmpOverlaps}[c]
 			ncmps++
 			ap.exitFailure = 2
 		case 'S':
 			app |= appSplit
-			splitStrs = append(splitStrs, r.arg)
+			splitStrs = append(splitStrs, r.Arg)
 		case optSplitHosts:
 			app |= appSplit
-			splitHostsStrs = append(splitHostsStrs, r.arg)
+			splitHostsStrs = append(splitHostsStrs, r.Arg)
 		case optBinary:
 			app |= appShowBits
 		case 'd':
 			app |= appDeaggregate
-			ipStr, haveIP = r.arg, true
+			ipStr, haveIP = r.Arg, true
 		case 'r':
 			app |= appShowInfo
 			ap.flags |= flagRandom
-			randomStr, haveRandom = r.arg, true
+			randomStr, haveRandom = r.Arg, true
 		case 'i':
 			app |= appShowInfo
 			ap.flags |= flagShowModernInfo
@@ -492,7 +494,7 @@ func (ap *app) realMain() {
 			ap.flags |= flagIPv6
 		case 'o':
 			selected |= fieldSelectingOptions['o']
-			hostname, haveHost = r.arg, true
+			hostname, haveHost = r.Arg, true
 		case optNoDecorate:
 			ap.flags |= flagNoDecorate
 			noDecorate = true
@@ -500,9 +502,9 @@ func (ap *app) realMain() {
 			ap.flags |= flagJSON
 		case optFormat:
 			if formatStr == "" {
-				formatStr = r.arg
-			} else if formatStr != r.arg && otherFormatStr == "" {
-				otherFormatStr = r.arg
+				formatStr = r.Arg
+			} else if formatStr != r.Arg && otherFormatStr == "" {
+				otherFormatStr = r.Arg
 			}
 		case 's':
 			ap.beSilent = true
@@ -519,15 +521,15 @@ func (ap *app) realMain() {
 				ap.exit(0)
 			}
 		case '?':
-			if r.optopt == '?' && !badOption {
+			if r.Optopt == '?' && !badOption {
 				ap.usage(true)
 				ap.exit(0)
 			}
-			if r.optopt == optEquals || r.optopt == optSubnetOf || r.optopt == optOverlaps {
+			if r.Optopt == optEquals || r.Optopt == optSubnetOf || r.Optopt == optOverlaps {
 				ap.exitFailure = 2
 			}
 			badOption = true
-			g.opterr = false
+			g.Quiet = true
 		default:
 			selected |= fieldSelectingOptions[c]
 		}
@@ -541,7 +543,7 @@ func (ap *app) realMain() {
 		ap.exit(ap.exitFailure)
 	}
 
-	if rest := g.remaining(); len(rest) > 0 {
+	if rest := g.Remaining(); len(rest) > 0 {
 		if haveIP {
 			ap.errorf("ipcalc: superfluous option given\n")
 			ap.exit(ap.exitFailure)

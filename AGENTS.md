@@ -36,11 +36,13 @@ expected-output file in `testdata/` and add a case in `ipcalc_test.go`.
 
 ## Architecture
 
-`cmd/ipcalc` is a one-line `main`; everything else is in `internal/ipcalc`, and all
-state of a run is in the `app` struct (`env.go`), so runs do not share state.
+`cmd/ipcalc` is a one-line `main`; almost everything else is in `internal/ipcalc`,
+and all state of a run is in the `app` struct (`env.go`), so runs do not share state.
+Two self-contained helpers have their own packages: `internal/getopt` (GNU
+`getopt_long` work-alike: abbreviations, bundling, `--x=y`) and `internal/u128`
+(128-bit unsigned arithmetic for split and deaggregate).
 
 * `cli.go`: options, mode and format selection (`realMain()`), `usage()`.
-* `getopt.go`: GNU `getopt_long` work-alike (abbreviations, bundling, `--x=y`).
 * `ipinfo.go`: parsing, address-space tables, IPv4/IPv6 info (`ntop6()`
   follows libc's `inet_ntop`).
 * `output.go`: output helpers, the field table and `showInfoFields()`; all
