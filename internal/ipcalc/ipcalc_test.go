@@ -133,9 +133,10 @@ func ipcalcTTY(t *testing.T, o opts, args ...string) result {
 
 func (s step) opts(env map[string]string) opts { return opts{env: env, geo: s.bin == "geo"} }
 
+// Golden names keep the C project's, which have colons; Windows disallows them in file names.
 func readGolden(t *testing.T, name string) string {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("testdata", name))
+	b, err := os.ReadFile(filepath.Join("testdata", strings.ReplaceAll(name, ":", "_")))
 	if err != nil {
 		t.Fatalf("missing file %s", name)
 	}
