@@ -1,3 +1,7 @@
+* go-ipcalc 0.1.2 (released 2026-11-17)
+- The release workflow updates the Homebrew formula in cleonte/homebrew-tap
+  (brew install cleonte/tap/go-ipcalc). No change in behavior.
+
 * go-ipcalc 0.1.1 (released 2026-11-17)
 - The tests also run on Windows; expected-output files no longer have colons
   in their names.
