@@ -30,8 +30,7 @@ import (
 
 // version is set at build time:
 // -ldflags "-X github.com/cleonte/go-ipcalc/internal/ipcalc.version=0.1.4".
-// Without
-// it, the module version of the build (go install) or "dev" is used.
+// Without it, the module version of the build (go install) or "dev" is used.
 var version string
 
 func versionString() string {

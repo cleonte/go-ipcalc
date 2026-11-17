@@ -1,3 +1,7 @@
+* go-ipcalc 0.1.4 (released 2026-11-17)
+- Release binaries are built with the latest Go 1.27 patch release; 0.1.3
+  was built with Go 1.27.0. No change in behavior.
+
 * go-ipcalc 0.1.3 (released 2026-11-17)
 - Builds with Go 1.27.0 or later (was 1.27.4).
 - The generated test tables are produced by a Go program (go generate) from
