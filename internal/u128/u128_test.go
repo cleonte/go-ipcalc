@@ -37,7 +37,7 @@ import (
 var (
 	zero = Uint{}
 	one  = From64(1)
-	max  = Uint{^uint64(0), ^uint64(0)}
+	maxU = Uint{^uint64(0), ^uint64(0)}
 	// bit 64 is the lowest bit of Hi.
 	two64 = Uint{Hi: 1}
 )
@@ -59,7 +59,7 @@ func fromBig(v *big.Int) Uint {
 
 var samples = []Uint{
 	zero, one, From64(2), From64(^uint64(0)), two64,
-	{Hi: 1, Lo: 1}, {Hi: 1 << 63}, {Hi: ^uint64(0)}, max,
+	{Hi: 1, Lo: 1}, {Hi: 1 << 63}, {Hi: ^uint64(0)}, maxU,
 	{Hi: 0x20010db800000000, Lo: 0x0000000000000001},
 	{Hi: 0x0123456789abcdef, Lo: 0xfedcba9876543210},
 }
@@ -75,9 +75,9 @@ func TestAddSub(t *testing.T) {
 		{zero, zero, zero},
 		{zero, one, one},
 		{From64(^uint64(0)), one, two64},
-		{max, one, zero},
-		{max, max, Uint{^uint64(0), ^uint64(0) - 1}},
-		{two64, max, Uint{0, ^uint64(0)}},
+		{maxU, one, zero},
+		{maxU, maxU, Uint{^uint64(0), ^uint64(0) - 1}},
+		{two64, maxU, Uint{0, ^uint64(0)}},
 	}
 	for _, tt := range tests {
 		if got := tt.a.Add(tt.b); got != tt.sum {
@@ -87,8 +87,8 @@ func TestAddSub(t *testing.T) {
 			t.Errorf("%+v - %+v = %+v, want %+v", tt.sum, tt.b, got, tt.a)
 		}
 	}
-	if got := zero.Sub(one); got != max {
-		t.Errorf("0 - 1 = %+v, want max", got)
+	if got := zero.Sub(one); got != maxU {
+		t.Errorf("0 - 1 = %+v, want maxU", got)
 	}
 	if got := two64.Sub(one); got != From64(^uint64(0)) {
 		t.Errorf("2^64 - 1 = %+v", got)
@@ -124,7 +124,7 @@ func TestCmp(t *testing.T) {
 		want int
 	}{
 		{zero, zero, 0},
-		{max, max, 0},
+		{maxU, maxU, 0},
 		{zero, one, -1},
 		{one, zero, 1},
 		{From64(^uint64(0)), two64, -1},
@@ -143,7 +143,7 @@ func TestIsZero(t *testing.T) {
 	if !zero.IsZero() {
 		t.Error("zero is not zero")
 	}
-	for _, a := range []Uint{one, two64, {Hi: 1 << 63}, max} {
+	for _, a := range []Uint{one, two64, {Hi: 1 << 63}, maxU} {
 		if a.IsZero() {
 			t.Errorf("%+v is zero", a)
 		}
@@ -172,14 +172,14 @@ func TestShifts(t *testing.T) {
 	if got := one.Lsh(64); got != two64 {
 		t.Errorf("1 << 64 = %+v", got)
 	}
-	if got := max.Rsh(127); got != one {
-		t.Errorf("max >> 127 = %+v", got)
+	if got := maxU.Rsh(127); got != one {
+		t.Errorf("maxU >> 127 = %+v", got)
 	}
 }
 
 func TestLowMask(t *testing.T) {
 	for _, n := range []uint{0, 1, 32, 63, 64, 65, 127, 128, 200} {
-		want := max
+		want := maxU
 		if n < 128 {
 			want = fromBig(new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), n), big.NewInt(1)))
 		}
@@ -204,7 +204,7 @@ func TestPlusOneString(t *testing.T) {
 		{From64(9), "10"},
 		{From64(^uint64(0)), "18446744073709551616"},
 		{two64, "18446744073709551617"},
-		{max, "340282366920938463463374607431768211456"},
+		{maxU, "340282366920938463463374607431768211456"},
 	}
 	for _, tt := range tests {
 		if got := tt.a.PlusOneString(); got != tt.want {

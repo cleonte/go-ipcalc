@@ -87,9 +87,10 @@ func (ap *app) jsonString(s string) {
 }
 
 func (ap *app) jsonPrintf(state *int, title string, hasTitle bool, value string) {
-	if *state == jsonArrayNext {
+	switch *state {
+	case jsonArrayNext:
 		ap.out.WriteString(",\n  ")
-	} else if *state == jsonNext {
+	case jsonNext:
 		ap.out.WriteString(",\n")
 	}
 	ap.out.WriteString("  ")
@@ -97,9 +98,10 @@ func (ap *app) jsonPrintf(state *int, title string, hasTitle bool, value string)
 		fmt.Fprintf(ap.out, "\"%s\":", title)
 	}
 	ap.jsonString(value)
-	if *state == jsonFirst {
+	switch *state {
+	case jsonFirst:
 		*state = jsonNext
-	} else if *state == jsonArrayFirst {
+	case jsonArrayFirst:
 		*state = jsonArrayNext
 	}
 }
@@ -230,13 +232,14 @@ func (f *outputField) showText() {
 	if v == "" {
 		v = f.value
 	}
-	if f.isList {
+	switch {
+	case f.isList:
 		for _, s := range f.values {
 			f.ap.prettyPrintf(f.title, s)
 		}
-	} else if f.attrs&attrHighlight != 0 {
+	case f.attrs&attrHighlight != 0:
 		f.ap.prettyDistPrintf(f.title, v)
-	} else {
+	default:
 		f.ap.prettyPrintf(f.title, v)
 	}
 }

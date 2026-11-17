@@ -71,21 +71,21 @@ func shlex(s string) ([]string, error) {
 	rs := []rune(s)
 	for i := 0; i < len(rs); i++ {
 		c := rs[i]
-		switch {
-		case c == ' ' || c == '\t' || c == '\n' || c == '\r':
+		switch c {
+		case ' ', '\t', '\n', '\r':
 			if inWord {
 				out = append(out, cur.String())
 				cur.Reset()
 				inWord = false
 			}
-		case c == '\\':
+		case '\\':
 			if i+1 >= len(rs) {
 				return nil, fmt.Errorf("no escaped character in %q", s)
 			}
 			i++
 			cur.WriteRune(rs[i])
 			inWord = true
-		case c == '\'':
+		case '\'':
 			inWord = true
 			i++
 			for ; i < len(rs) && rs[i] != '\''; i++ {
@@ -94,7 +94,7 @@ func shlex(s string) ([]string, error) {
 			if i >= len(rs) {
 				return nil, fmt.Errorf("no closing quotation in %q", s)
 			}
-		case c == '"':
+		case '"':
 			inWord = true
 			i++
 			for ; i < len(rs) && rs[i] != '"'; i++ {

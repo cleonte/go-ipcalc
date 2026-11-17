@@ -390,7 +390,7 @@ func (info *ipInfo) ipv6IIDInfo(ip [16]byte) {
 	}
 	info.iid = fmt.Sprintf("%02x%02x:%02x%02x:%02x%02x:%02x%02x",
 		iid[0], iid[1], iid[2], iid[3], iid[4], iid[5], iid[6], iid[7])
-	if !(iid[3] == 0xff && iid[4] == 0xfe) {
+	if iid[3] != 0xff || iid[4] != 0xfe {
 		return
 	}
 	mac0 := iid[0] ^ 0x02
@@ -442,11 +442,11 @@ func (ap *app) getIPv6Info(ipStr string, prefix int, flags uint) (*ipInfo, bool)
 
 	if prefix < 128 {
 		info.hostmin = info.network
-		var max [16]byte
-		for i := range max {
-			max[i] = network[i] | ^mask[i]
+		var last [16]byte
+		for i := range last {
+			last[i] = network[i] | ^mask[i]
 		}
-		info.hostmax = ntop6(max)
+		info.hostmax = ntop6(last)
 	} else {
 		info.hostmin = info.network
 		info.hostmax = info.network

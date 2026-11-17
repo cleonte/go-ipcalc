@@ -26,6 +26,7 @@ Only the Go toolchain is needed.
 ```sh
 go build -o ipcalc ./cmd/ipcalc
 go vet ./...
+golangci-lint run ./...   # v2, configured in .golangci.yml
 go test -race ./...
 ```
 

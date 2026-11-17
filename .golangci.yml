@@ -1,0 +1,28 @@
+version: "2"
+
+linters:
+  # standard: errcheck, govet, ineffassign, staticcheck, unused
+  default: standard
+  enable:
+    - bodyclose
+    - copyloopvar
+    - errorlint
+    - gocritic
+    - misspell
+    - nolintlint
+    - revive
+    - unconvert
+    - unparam
+
+  settings:
+    errcheck:
+      # like the C original, ignore errors of output writes
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - (*bufio.Writer).WriteString
+        - (*bufio.Writer).WriteByte
+
+formatters:
+  enable:
+    - gofmt

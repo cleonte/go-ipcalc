@@ -193,9 +193,9 @@ func FuzzInfo(f *testing.F) {
 		if vars["PREFIX"] != strconv.Itoa(p) {
 			t.Fatalf("%s: PREFIX=%s", in, vars["PREFIX"])
 		}
-		min, err1 := netip.ParseAddr(vars["MINADDR"])
-		max, err2 := netip.ParseAddr(vars["MAXADDR"])
-		if err1 != nil || err2 != nil || min.Compare(max) > 0 || !net.Contains(min) || !net.Contains(max) {
+		minA, err1 := netip.ParseAddr(vars["MINADDR"])
+		maxA, err2 := netip.ParseAddr(vars["MAXADDR"])
+		if err1 != nil || err2 != nil || minA.Compare(maxA) > 0 || !net.Contains(minA) || !net.Contains(maxA) {
 			t.Fatalf("%s: host range %s-%s", in, vars["MINADDR"], vars["MAXADDR"])
 		}
 		// a network is its own network, and equals itself

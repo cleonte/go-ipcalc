@@ -125,7 +125,7 @@ func run(e environ) (code int) {
 
 // exit flushes the output and ends the run with the given status.
 func (ap *app) exit(code int) {
-	ap.out.Flush()
+	_ = ap.out.Flush()
 	panic(exitPanic(code))
 }
 

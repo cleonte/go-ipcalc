@@ -270,7 +270,7 @@ func mask2prefix(a netip.Addr) int {
 }
 
 func (ap *app) strToPrefix(prefixStr string, fix bool) int {
-	prefix := -1
+	var prefix int
 	if ap.flags&flagIPv6 == 0 && strings.Contains(prefixStr, ".") {
 		a, ok := parseIPv4Strict(prefixStr)
 		if !ok {

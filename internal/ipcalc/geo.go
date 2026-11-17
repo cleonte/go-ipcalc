@@ -64,12 +64,12 @@ func getUnsigned(rec any, keys ...string) string {
 
 // lookupRecord finds the record of ip when it covers the whole network
 // ip/prefix, and the prefix of its network
-func lookupRecord(file string, ip netip.Addr, v6text bool, prefix int) (any, int, bool) {
+func lookupRecord(file string, ip netip.Addr, prefix int) (any, int, bool) {
 	db, err := maxminddb.Open(file)
 	if err != nil {
 		return nil, 0, false
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if ip.Is6() && db.Metadata.IPVersion == 4 {
 		return nil, 0, false
@@ -135,7 +135,7 @@ func (ap *app) geoLookup(ipStr string, prefix int) geoInfo {
 	found := false
 	networkPrefix := 0
 
-	if rec, rp, ok := lookupRecord(ap.countryDB, ip, v6, prefix); ok {
+	if rec, rp, ok := lookupRecord(ap.countryDB, ip, prefix); ok {
 		found = true
 		networkPrefix = rp
 		geo.continent = getString(rec, "continent", "names", "en")
@@ -147,7 +147,7 @@ func (ap *app) geoLookup(ipStr string, prefix int) geoInfo {
 			geo.ccode = getString(rec, key, "iso_code")
 		}
 	}
-	if rec, rp, ok := lookupRecord(ap.cityDB, ip, v6, prefix); ok {
+	if rec, rp, ok := lookupRecord(ap.cityDB, ip, prefix); ok {
 		found = true
 		if rp > networkPrefix {
 			networkPrefix = rp
@@ -162,7 +162,7 @@ func (ap *app) geoLookup(ipStr string, prefix int) geoInfo {
 		geo.accuracyRadius = getUnsigned(rec, "location", "accuracy_radius")
 		geo.timeZone = getString(rec, "location", "time_zone")
 	}
-	if rec, rp, ok := lookupRecord(ap.asnDB, ip, v6, prefix); ok {
+	if rec, rp, ok := lookupRecord(ap.asnDB, ip, prefix); ok {
 		found = true
 		if rp > networkPrefix {
 			networkPrefix = rp
