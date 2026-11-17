@@ -1,5 +1,7 @@
 # go-ipcalc
 
+[![test](https://github.com/cleonte/go-ipcalc/actions/workflows/test.yml/badge.svg)](https://github.com/cleonte/go-ipcalc/actions/workflows/test.yml) [![Release](https://img.shields.io/github/v/release/cleonte/go-ipcalc)](https://github.com/cleonte/go-ipcalc/releases/latest) [![Go Reference](https://pkg.go.dev/badge/github.com/cleonte/go-ipcalc.svg)](https://pkg.go.dev/github.com/cleonte/go-ipcalc) [![Go Report Card](https://goreportcard.com/badge/github.com/cleonte/go-ipcalc)](https://goreportcard.com/report/github.com/cleonte/go-ipcalc) [![License: GPL-2.0](https://img.shields.io/badge/license-GPL--2.0-blue.svg)](COPYING)
+
 A Go port of [ipcalc](https://gitlab.com/ipcalc/ipcalc): IPv4/IPv6 network
 calculations (info, check, split, deaggregate, compare, binary view, random
 networks) with optional geo-IP lookup, printed as colored text, `NAME=value`
