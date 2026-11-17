@@ -4,9 +4,6 @@
 > implementation (ipcalc 1.2.0), kept verbatim so the documents stay
 > mergeable with upstream. `GO-PORT.md` maps the C files to the Go files.
 
-> These documents come from the C implementation; see `GO-PORT.md` for what
-> differs in the Go port.
-
 This directory is the normative description of what ipcalc must do, in
 atomic, testable statements with RFC 2119 keywords, source citations,
 and acceptance criteria. It complements `ipcalc.1.md`, which describes
