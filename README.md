@@ -1,15 +1,44 @@
-# go-ipcalc (prototype)
+# go-ipcalc
 
-Go port of [ipcalc](https://gitlab.com/ipcalc/ipcalc), written to measure what a rewrite costs.
-Implemented: info mode (summary, `--all-info`, every field-selecting option),
-`-S`/`--split`/`--split-hosts` (`internal/ipcalc/split.go`), `-d`/`--deaggregate` (`internal/ipcalc/deaggregate.go`),
-`--equals`/`--subnet-of`/`--overlaps` (`internal/ipcalc/compare.go`), `--binary` (`internal/ipcalc/binary.go`), `-g`/`--geoinfo` and `--all-info` geo values (`internal/ipcalc/geo.go`), `-c`, `--format`/`-j`/`--no-decorate`, `-r`, `-h`/`-o`, `-v`, `--help`/`--usage`,
-and a GNU `getopt_long` work-alike (`internal/ipcalc/getopt.go`).
+A Go port of [ipcalc](https://gitlab.com/ipcalc/ipcalc): IPv4/IPv6 network
+calculations (info, check, split, deaggregate, compare, binary view, random
+networks) with optional geo-IP lookup, printed as colored text, `NAME=value`
+shell variables or JSON. It is a single static binary (`CGO_ENABLED=0`) that
+builds for Linux, macOS, FreeBSD and Windows.
 
-Geo lookup uses [maxminddb-golang](https://github.com/oschwald/maxminddb-golang), so
-there is no libmaxminddb, no `dlopen` and no geo-less build. The database
-paths default to `/usr/share/GeoIP/GeoLite2-*.mmdb` and are overridden at build
-time, as in the C build: `-ldflags "-X github.com/cleonte/go-ipcalc/internal/ipcalc.countryDB=... -X ...cityDB=... -X ...asnDB=..."`.
+The goal is behavior identical to the C ipcalc (currently 1.2.0): same
+options, same output bytes, same exit status, same diagnostics. The test
+suite is the C project's suite translated to Go, and the port was checked
+against the C binary with differential fuzzing.
+
+## Install
+
+Download an archive from the
+[releases page](https://github.com/cleonte/go-ipcalc/releases) (verify it
+against `SHA256SUMS`), or build from source:
+
+```sh
+go install github.com/cleonte/go-ipcalc/cmd/ipcalc@latest
+```
+
+```
+$ ipcalc 192.168.1.10/24
+Address:	192.168.1.10
+Network:	192.168.1.0/24
+Netmask:	255.255.255.0 = 24
+Broadcast:	192.168.1.255
+...
+```
+
+See `ipcalc --help` and `man/ipcalc.1`.
+
+## Geo lookup
+
+`-g`/`--geoinfo` and `--all-info` read MaxMind databases through
+[maxminddb-golang](https://github.com/oschwald/maxminddb-golang); there is no
+libmaxminddb, no `dlopen` and no build without geo support. The database paths
+default to `/usr/share/GeoIP/GeoLite2-*.mmdb` and are overridden at build time:
+`-ldflags "-X github.com/cleonte/go-ipcalc/internal/ipcalc.countryDB=... -X ...cityDB=... -X ...asnDB=..."`.
 
 ## Tests
 
@@ -32,12 +61,9 @@ go install github.com/cleonte/go-ipcalc/cmd/ipcalc@latest   # or: go build -o ip
 go test ./...
 ```
 
-`scripts/run-c-suite.sh` is an optional cross-check that runs the C project's
-own Meson suite against the Go binary (needs meson, ninja and libmaxminddb).
+## Verification
 
-## Result
-
-`go test ./...` passes (479 tests). The C suite (475 tests, geo enabled) also
+`go test ./...` passes. The C suite (475 tests, geo enabled) also
 passes against the Go binaries, and differential fuzzing against the C
 binaries (info, split, deaggregate, compare, binary and geo, 16000 cases)
 found no differences.
@@ -49,11 +75,18 @@ found no differences.
 * `inet_pton` strictness follows glibc/`net/netip`: leading-zero octets
   (`01.2.3.4`) and IPv6 zone ids (`fe80::1%eth0`) are rejected. macOS libc accepts them.
 
+## Contributing and security
+
+See `CONTRIBUTING.md` and `SECURITY.md`. Requirements live in
+`doc/requirements/`; `doc/requirements/GO-PORT.md` maps their C source
+citations to the Go files.
+
 ## License and attribution
 
-A derivative work of ipcalc, licensed under GPL-2.0 (see `COPYING`).
-Copyright (c) 1997-2015 Red Hat, Inc.; (c) 2026 Nikos Mavrogiannopoulos and
-the other ipcalc authors. `split.go` follows `netsplit.c`, which is
-BSD-3-Clause licensed: (c) 2003-2016 Simon Ekstrand, 2010-2016 Joachim
-Nilsson, 2016 Nikos Mavrogiannopoulos. This is an unofficial prototype and
-not affiliated with the ipcalc project.
+A derivative work of ipcalc, licensed under GPL-2.0-only (see `COPYING`;
+each source file carries an SPDX header). Copyright (c) 1997-2015 Red Hat,
+Inc.; (c) 2026 Nikos Mavrogiannopoulos and the other ipcalc authors.
+`split.go` follows `netsplit.c`, which is BSD-3-Clause licensed:
+(c) 2003-2016 Simon Ekstrand, 2010-2016 Joachim Nilsson, 2016 Nikos
+Mavrogiannopoulos. This is an independent port, not an official part of the
+ipcalc project.
