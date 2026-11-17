@@ -38,7 +38,7 @@ jobs:
         run: go tool staticcheck ./...
       - name: govulncheck
         run: go tool govulncheck ./...
-      - name: man page is up to date
+      - name: generated files are up to date
         run: |
           go generate ./...
-          git diff --exit-code man/
+          git diff --exit-code

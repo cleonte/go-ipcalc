@@ -22,12 +22,32 @@ go build ./...
 go test -race ./...
 go vet ./...
 go tool staticcheck ./...
-go generate ./... && git diff --exit-code man/   # man page is generated
+go generate ./... && git diff --exit-code   # man page and test tables are generated
 ```
 
 CI runs the same checks on Linux and macOS. Everything is plain Go; no C
 compiler, Python or Perl is needed. New cases go in the table in
 `internal/ipcalc/` with an expected-output file in `testdata/`.
+
+## Generated test tables
+
+`internal/ipcalc/cases_gen_test.go`, `debian_cases_gen_test.go` and
+`color_cases_gen_test.go` are written by `internal/ipcalc/internal/gencases`
+(run by `go generate ./...`); do not edit them by hand. The inputs are
+committed: `testdata/upstream/meson-tests.json` is a snapshot of the upstream
+test list, and `testdata/color-cases.json` lists the color cases.
+
+To follow a newer upstream, in the C ipcalc repository run
+
+```sh
+meson setup build && meson introspect --tests build > meson-tests.json
+```
+
+then replace the absolute paths in it by placeholders (`@BUILD@` for the
+build directory, `@SRC@` for the source directory, so that no local paths are
+committed), copy the file to `internal/ipcalc/testdata/upstream/meson-tests.json`,
+copy any new expected-output files from the C `tests/` directory to
+`internal/ipcalc/testdata/`, and run `go generate ./...`.
 
 ## Pull requests
 
