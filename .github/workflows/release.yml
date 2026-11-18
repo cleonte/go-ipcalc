@@ -1,7 +1,8 @@
 name: release
 
-# Pushing a tag vX.Y.Z builds the binaries and publishes a release.
-# Running the workflow by hand builds them without publishing.
+# Pushing a tag vX.Y.Z builds the binaries and packages with GoReleaser and
+# publishes a release. Running the workflow by hand builds a snapshot without
+# publishing.
 on:
   push:
     tags: ['v*']
@@ -11,47 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - {goos: linux, goarch: amd64}
-          - {goos: linux, goarch: arm64}
-          - {goos: darwin, goarch: amd64}
-          - {goos: darwin, goarch: arm64}
-          - {goos: freebsd, goarch: amd64}
-          - {goos: windows, goarch: amd64}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          # the latest patch release, not the go.mod minimum
-          go-version: '1.27.x'
-      - name: build
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: '0'
-        run: |
-          version=dev
-          case "$GITHUB_REF" in refs/tags/v*) version=${GITHUB_REF#refs/tags/v};; esac
-          name=ipcalc_${version}_${GOOS}_${GOARCH}
-          exe=ipcalc; [ "$GOOS" = windows ] && exe=ipcalc.exe
-          mkdir -p dist/$name
-          go build -trimpath -ldflags "-s -w -X github.com/cleonte/go-ipcalc/internal/ipcalc.version=$version" -o dist/$name/$exe ./cmd/ipcalc
-          cp COPYING README.md NEWS man/ipcalc.1 dist/$name/
-          cd dist
-          if [ "$GOOS" = windows ]; then zip -qr $name.zip $name; else tar czf $name.tar.gz $name; fi
-          rm -r $name
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/*
-
-  publish:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+  goreleaser:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -59,26 +20,39 @@ jobs:
       attestations: write
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v4
         with:
-          path: dist
-          merge-multiple: true
-      - name: checksums
-        run: cd dist && sha256sum * > SHA256SUMS
-      - uses: actions/attest-build-provenance@v2
+          fetch-depth: 0
+      - uses: actions/setup-go@v7
         with:
-          subject-path: dist/*
-      - name: publish
-        env:
-          GH_TOKEN: ${{ github.token }}
+          # the latest patch release, not the go.mod minimum
+          go-version: '1.27.x'
+      - name: release notes
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
           # the notes are the NEWS entry of the version
-          awk -v v="${GITHUB_REF_NAME#v}" 'index($0,"* go-ipcalc " v " ")==1 {p=1; next} /^[*] / {p=0} p' NEWS > notes.md
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
-          else
-            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md dist/*
-          fi
+          awk -v v="${GITHUB_REF_NAME#v}" 'index($0,"* go-ipcalc " v " ")==1 {p=1; next} /^[*] / {p=0} p' NEWS > "$RUNNER_TEMP/notes.md"
+      - uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: ${{ startsWith(github.ref, 'refs/tags/v') && format('release --clean --release-notes={0}/notes.md', runner.temp) || 'release --snapshot --clean' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/attest-build-provenance@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.deb
+            dist/*.rpm
+            dist/*.apk
+            dist/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        with:
+          name: dist
+          path: dist/*
 
   # Updates the formula in the tap cleonte/homebrew-tap. The GITHUB_TOKEN of a
   # workflow cannot push to another repository, so this needs the repository
@@ -86,7 +60,7 @@ jobs:
   # the secret the job is skipped.
   homebrew:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: publish
+    needs: goreleaser
     runs-on: ubuntu-latest
     env:
       HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}

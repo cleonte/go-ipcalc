@@ -68,9 +68,13 @@ first; this port tracks upstream.
    release notes.
 2. Tag and push: `git tag -a vX.Y.Z -m "go-ipcalc X.Y.Z" && git push origin vX.Y.Z`.
 
-The release workflow builds the archives, attests them, publishes the release
-and then updates the formula in `cleonte/homebrew-tap` (`brew install
-cleonte/tap/go-ipcalc`) from `packaging/homebrew/`. The last step needs the
+The release workflow runs GoReleaser (`.goreleaser.yaml`): it builds the
+archives and the Linux packages (`.deb`, `.rpm`, `.apk`, package `go-ipcalc`),
+writes `SHA256SUMS`, attests them and publishes the release with the NEWS
+entry as its notes. It then updates the formula in `cleonte/homebrew-tap`
+(`brew install cleonte/tap/go-ipcalc`) from `packaging/homebrew/`. To try a
+release locally without publishing, run `goreleaser release --snapshot --clean`
+(the result is in `dist/`). The formula step needs the
 repository secret `HOMEBREW_TAP_TOKEN`, a token that can push to the tap; without
 it the workflow skips the step and the formula must be updated by hand with
 `packaging/homebrew/render.sh VERSION SHA256SUMS`.

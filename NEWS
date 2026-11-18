@@ -1,3 +1,8 @@
+* go-ipcalc 0.1.5 (released 2026-11-18)
+- Releases are built with GoReleaser and include .deb, .rpm and .apk
+  packages (package go-ipcalc, which conflicts with the distribution's
+  ipcalc). No change in behavior.
+
 * go-ipcalc 0.1.4 (released 2026-11-17)
 - Release binaries are built with the latest Go 1.27 patch release; 0.1.3
   was built with Go 1.27.0. No change in behavior.

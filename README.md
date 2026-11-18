@@ -15,9 +15,24 @@ against the C binary with differential fuzzing.
 
 ## Install
 
-Download an archive from the
-[releases page](https://github.com/cleonte/go-ipcalc/releases) (verify it
-against `SHA256SUMS`), or build from source:
+Homebrew:
+
+```sh
+brew install cleonte/tap/go-ipcalc
+```
+
+Linux packages (`.deb`, `.rpm`, `.apk`, named `go-ipcalc`) are on the
+[releases page](https://github.com/cleonte/go-ipcalc/releases):
+
+```sh
+sudo apt install ./go-ipcalc_<version>_linux_amd64.deb
+sudo dnf install ./go-ipcalc_<version>_linux_amd64.rpm
+sudo apk add --allow-untrusted ./go-ipcalc_<version>_linux_amd64.apk
+```
+
+They conflict with the distribution's `ipcalc` package, which installs the
+same `/usr/bin/ipcalc`. Archives for other systems are on the same page; verify
+a download against `SHA256SUMS`. Or build from source:
 
 ```sh
 go install github.com/cleonte/go-ipcalc/cmd/ipcalc@latest
