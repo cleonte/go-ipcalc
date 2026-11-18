@@ -58,9 +58,11 @@ nfpms:
       - src: COPYING
         dst: /usr/share/doc/go-ipcalc/COPYING
 
-# The release notes are the NEWS entry of the version (--release-notes).
+# The release notes are the NEWS entry of the version (--release-notes). The
+# changelog must not be disabled: that skips the pipe that reads the notes
+# file, and the release body comes out empty.
 changelog:
-  disable: true
+  use: git
 
 release:
   github:
