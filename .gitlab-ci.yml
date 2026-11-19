@@ -46,7 +46,7 @@ test:linux:
   stage: test
   image: golang:1.27
   script:
-    - test -z "$(gofmt -l .)"
+    - test -z "$(gofmt -l $(git ls-files '*.go'))"
     - go vet ./...
     - go test -race -coverprofile=coverage.out ./...
     - go tool cover -func=coverage.out | tail -1
