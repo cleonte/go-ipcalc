@@ -14,6 +14,7 @@ workflow:
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "schedule"
 
 include:
   - template: Jobs/Secret-Detection.gitlab-ci.yml
@@ -23,8 +24,18 @@ variables:
   GOMODCACHE: $CI_PROJECT_DIR/.cache/go/pkg/mod
   GOCACHE: $CI_PROJECT_DIR/.cache/go-build
 
+# the template's rules, after skipping scheduled pipelines
 secret_detection:
   stage: test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $SECRET_DETECTION_DISABLED == 'true' || $SECRET_DETECTION_DISABLED == '1'
+      when: never
+    - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $AST_ENABLE_MR_PIPELINES == "true" && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
 
 .go-cache:
   cache:
@@ -37,6 +48,8 @@ secret_detection:
 
 .checks-rules:
   rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_TAG
@@ -106,6 +119,55 @@ generate:
   script:
     - go generate ./...
     - git diff --exit-code
+
+# Weekly scheduled pipeline (see CONTRIBUTING.md): only these two jobs run.
+# Fails when the C ipcalc has a newer release (MAJOR.MINOR) than go-ipcalc.
+upstream-parity:
+  stage: test
+  image: alpine:3.22
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    GIT_DEPTH: "0"
+  script:
+    - apk add --no-cache curl jq git
+    - |
+      c=$(curl -fsS 'https://gitlab.com/api/v4/projects/ipcalc%2Fipcalc/repository/tags?order_by=version&per_page=50' |
+        jq -r '.[].name' | sed 's/^v//' | grep -E '^[0-9]+\.[0-9]+(\.[0-9]+)?$' | sort -V | tail -1)
+      g=$(git tag --list 'v*' --sort=-v:refname | head -1 | sed 's/^v//')
+      test -n "$c" && test -n "$g" || { echo "cannot determine versions (ipcalc='$c', go-ipcalc='$g')"; exit 1; }
+      cm=$(echo "$c" | cut -d. -f1,2)
+      gm=$(echo "$g" | cut -d. -f1,2)
+      if [ "$cm" != "$gm" ] && [ "$(printf '%s\n%s\n' "$cm" "$gm" | sort -V | tail -1)" = "$cm" ]; then
+        echo "ipcalc $c is released; go-ipcalc is at $g - port pending, see CONTRIBUTING.md"
+        exit 1
+      fi
+      echo "ipcalc $c, go-ipcalc $g: up to date"
+
+# Runs every fuzz target for FUZZ_TIME each; all targets run even if one fails.
+fuzz:
+  extends: .go-cache
+  stage: test
+  image: golang:1.27
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    FUZZ_TIME: 2m
+  script:
+    - |
+      rc=0
+      for pkg in $(go list ./...); do
+        for name in $(go test -list '^Fuzz' "$pkg" | grep '^Fuzz'); do
+          echo "=== $pkg $name"
+          go test -run '^$' -fuzz "^${name}\$" -fuzztime "$FUZZ_TIME" "$pkg" || rc=1
+        done
+      done
+      exit $rc
+  artifacts:
+    when: on_failure
+    paths:
+      - '**/testdata/fuzz/'
+    expire_in: 30 days
 
 # Pushing a protected tag vX.Y.Z builds the binaries and packages with
 # GoReleaser and publishes a GitLab release. GITLAB_TOKEN is the job token

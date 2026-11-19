@@ -32,7 +32,9 @@ go test -race ./...
 
 CI is GitLab (`.gitlab-ci.yml`): vet, race tests, minimum-Go tests, Windows
 tests, golangci-lint, govulncheck and a `go generate` freshness check. The
-GitHub repository is a push mirror that only runs a macOS test job.
+GitHub repository is a push mirror that only runs a macOS test job. A weekly
+scheduled pipeline runs only the `upstream-parity` and `fuzz` jobs
+(see `CONTRIBUTING.md`).
 
 The tests run the program in-process through `run()` (`env.go`). The environment, terminal state, name resolvers and geo
 database paths are injected through `environ`. Geo tests write MaxMind databases from

@@ -108,3 +108,19 @@ One-time project settings:
 
 To try a release locally without publishing, run
 `goreleaser release --snapshot --clean` (the result is in `dist/`).
+
+## Scheduled checks
+
+A weekly pipeline schedule (Mondays 05:00 UTC, cron `0 5 * * 1`, ref `master`)
+runs only two jobs; the regular jobs are skipped in scheduled pipelines:
+
+* `upstream-parity` fails when the C ipcalc has a release with a newer
+  MAJOR.MINOR than the latest go-ipcalc tag, so GitLab emails the schedule
+  owner. Port the C release, then release go-ipcalc X.Y.0.
+* `fuzz` runs every fuzz target for `FUZZ_TIME` (default 2m) each. When a
+  target fails, the crashers are in the job artifacts (`testdata/fuzz/`); copy
+  them into the package's `testdata/fuzz/` and fix the bug.
+
+Create the schedule once with
+`glab schedule create --description "weekly checks" --ref master --cron "0 5 * * 1" --cron-timezone UTC`
+or in Settings, CI/CD, Pipeline schedules.
