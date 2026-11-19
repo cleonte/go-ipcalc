@@ -122,5 +122,5 @@ runs only two jobs; the regular jobs are skipped in scheduled pipelines:
   them into the package's `testdata/fuzz/` and fix the bug.
 
 Create the schedule once with
-`glab schedule create --description "weekly checks" --ref master --cron "0 5 * * 1" --cron-timezone UTC`
+`glab schedule create --description "weekly checks" --ref master --cron "0 5 * * 1" --cronTimeZone UTC`
 or in Settings, CI/CD, Pipeline schedules.
