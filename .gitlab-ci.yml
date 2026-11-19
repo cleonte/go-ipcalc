@@ -125,9 +125,9 @@ release:
   script:
     - |
       # the notes are the NEWS entry of the version
-      awk -v v="${CI_COMMIT_TAG#v}" 'index($0,"* go-ipcalc " v " ")==1 {p=1; next} /^[*] / {p=0} p' NEWS > notes.md
-    - test -s notes.md
-    - go run github.com/goreleaser/goreleaser/v2@v2.20.2 release --clean --release-notes=notes.md
+      awk -v v="${CI_COMMIT_TAG#v}" 'index($0,"* go-ipcalc " v " ")==1 {p=1; next} /^[*] / {p=0} p' NEWS > /tmp/notes.md
+    - test -s /tmp/notes.md
+    - go run github.com/goreleaser/goreleaser/v2@v2.20.2 release --clean --release-notes=/tmp/notes.md
   artifacts:
     paths:
       - dist/*.tar.gz
