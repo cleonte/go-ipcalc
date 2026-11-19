@@ -1,4 +1,7 @@
-* go-ipcalc 0.2.0 (unreleased)
+* go-ipcalc 1.2.0 (released 2026-11-19)
+- Version numbers now follow the C ipcalc: go-ipcalc 1.2.0 matches ipcalc
+  1.2.0, and the last number is go-ipcalc's own (Go-only fixes and
+  packaging). No change in behavior.
 - The project moved to https://gitlab.com/ipcalc/go-ipcalc. The Go module
   path is now gitlab.com/ipcalc/go-ipcalc: update imports and use
   "go install gitlab.com/ipcalc/go-ipcalc/cmd/ipcalc@latest".

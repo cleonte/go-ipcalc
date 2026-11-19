@@ -29,7 +29,7 @@ import (
 )
 
 // version is set at build time:
-// -ldflags "-X gitlab.com/ipcalc/go-ipcalc/internal/ipcalc.version=0.1.4".
+// -ldflags "-X gitlab.com/ipcalc/go-ipcalc/internal/ipcalc.version=1.2.0".
 // Without it, the module version of the build (go install) or "dev" is used.
 var version string
 

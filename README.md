@@ -16,6 +16,9 @@ options, same output bytes, same exit status, same diagnostics. The test
 suite is the C project's suite translated to Go, and the port was checked
 against the C binary with differential fuzzing.
 
+Versions follow the C ipcalc: go-ipcalc 1.2.x behaves like ipcalc 1.2, and the
+last number is go-ipcalc's own (Go-only fixes and packaging).
+
 ## Install
 
 Homebrew:

@@ -72,6 +72,12 @@ first; this port tracks upstream.
 
 ## Releasing
 
+Versions are MAJOR.MINOR.PATCH. MAJOR.MINOR is the C ipcalc release the port
+matches (go-ipcalc 1.2.x behaves like ipcalc 1.2); PATCH is go-ipcalc's own.
+Go-only fixes and packaging changes increment PATCH (1.2.0, 1.2.1, ...).
+When C ipcalc releases X.Y.0 and the port is on par, release go-ipcalc
+X.Y.0.
+
 1. Add a `* go-ipcalc X.Y.Z (released DATE)` section to `NEWS`; it becomes the
    release notes.
 2. Tag and push: `git tag -a vX.Y.Z -m "go-ipcalc X.Y.Z" && git push origin vX.Y.Z`.
