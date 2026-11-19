@@ -30,6 +30,10 @@ golangci-lint run ./...   # v2, configured in .golangci.yml
 go test -race ./...
 ```
 
+CI is GitLab (`.gitlab-ci.yml`): vet, race tests, minimum-Go tests, Windows
+tests, golangci-lint, govulncheck and a `go generate` freshness check. The
+GitHub repository is a push mirror that only runs a macOS test job.
+
 The tests run the program in-process through `run()` (`env.go`). The environment, terminal state, name resolvers and geo
 database paths are injected through `environ`. Geo tests write MaxMind databases from
 `testdata/geo-*.json` (`geodb_test.go`). To add a test, create the

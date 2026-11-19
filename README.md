@@ -1,12 +1,15 @@
 # go-ipcalc
 
-[![test](https://github.com/cleonte/go-ipcalc/actions/workflows/test.yml/badge.svg)](https://github.com/cleonte/go-ipcalc/actions/workflows/test.yml) [![Release](https://img.shields.io/github/v/release/cleonte/go-ipcalc)](https://github.com/cleonte/go-ipcalc/releases/latest) [![Go Reference](https://pkg.go.dev/badge/github.com/cleonte/go-ipcalc.svg)](https://pkg.go.dev/github.com/cleonte/go-ipcalc) [![License: GPL-2.0](https://img.shields.io/badge/license-GPL--2.0-blue.svg)](COPYING)
+[![pipeline](https://gitlab.com/ipcalc/go-ipcalc/badges/master/pipeline.svg)](https://gitlab.com/ipcalc/go-ipcalc/-/pipelines) [![Release](https://gitlab.com/ipcalc/go-ipcalc/-/badges/release.svg)](https://gitlab.com/ipcalc/go-ipcalc/-/releases) [![Go Reference](https://pkg.go.dev/badge/gitlab.com/ipcalc/go-ipcalc.svg)](https://pkg.go.dev/gitlab.com/ipcalc/go-ipcalc) [![License: GPL-2.0](https://img.shields.io/badge/license-GPL--2.0-blue.svg)](COPYING)
 
 A Go port of [ipcalc](https://gitlab.com/ipcalc/ipcalc): IPv4/IPv6 network
 calculations (info, check, split, deaggregate, compare, binary view, random
 networks) with optional geo-IP lookup, printed as colored text, `NAME=value`
 shell variables or JSON. It is a single static binary (`CGO_ENABLED=0`) that
 builds for Linux, macOS, FreeBSD and Windows.
+
+The project lives at <https://gitlab.com/ipcalc/go-ipcalc>; report issues and
+send merge requests there. The GitHub repository is a read-only mirror.
 
 The goal is behavior identical to the C ipcalc (currently 1.2.0): same
 options, same output bytes, same exit status, same diagnostics. The test
@@ -22,7 +25,7 @@ brew install cleonte/tap/go-ipcalc
 ```
 
 Linux packages (`.deb`, `.rpm`, `.apk`, named `go-ipcalc`) are on the
-[releases page](https://github.com/cleonte/go-ipcalc/releases):
+[releases page](https://gitlab.com/ipcalc/go-ipcalc/releases):
 
 ```sh
 sudo apt install ./go-ipcalc_<version>_linux_amd64.deb
@@ -35,7 +38,7 @@ same `/usr/bin/ipcalc`. Archives for other systems are on the same page; verify
 a download against `SHA256SUMS`. Or build from source:
 
 ```sh
-go install github.com/cleonte/go-ipcalc/cmd/ipcalc@latest
+go install gitlab.com/ipcalc/go-ipcalc/cmd/ipcalc@latest
 ```
 
 ```
@@ -55,7 +58,7 @@ See `ipcalc --help` and `man/ipcalc.1`.
 [maxminddb-golang](https://github.com/oschwald/maxminddb-golang); there is no
 libmaxminddb, no `dlopen` and no build without geo support. The database paths
 default to `/usr/share/GeoIP/GeoLite2-*.mmdb` and are overridden at build time:
-`-ldflags "-X github.com/cleonte/go-ipcalc/internal/ipcalc.countryDB=... -X ...cityDB=... -X ...asnDB=..."`.
+`-ldflags "-X gitlab.com/ipcalc/go-ipcalc/internal/ipcalc.countryDB=... -X ...cityDB=... -X ...asnDB=..."`.
 
 ## Tests
 
@@ -74,7 +77,7 @@ need nothing else, not even a C compiler or Python.
   `--split-hosts` comparison, recorded once, so Perl is not needed.
 
 ```sh
-go install github.com/cleonte/go-ipcalc/cmd/ipcalc@latest   # or: go build -o ipcalc ./cmd/ipcalc
+go install gitlab.com/ipcalc/go-ipcalc/cmd/ipcalc@latest   # or: go build -o ipcalc ./cmd/ipcalc
 go test ./...
 ```
 

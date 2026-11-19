@@ -1,4 +1,4 @@
-module github.com/cleonte/go-ipcalc
+module gitlab.com/ipcalc/go-ipcalc
 
 go 1.27.0
 

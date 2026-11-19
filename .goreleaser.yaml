@@ -10,7 +10,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w -X github.com/cleonte/go-ipcalc/internal/ipcalc.version={{.Version}}
+      - -s -w -X gitlab.com/ipcalc/go-ipcalc/internal/ipcalc.version={{.Version}}
     targets:
       - linux_amd64
       - linux_arm64
@@ -46,7 +46,7 @@ nfpms:
     ids: [ipcalc]
     formats: [deb, rpm, apk]
     maintainer: "Cristian Leonte <544271+cleonte@users.noreply.github.com>"
-    homepage: https://github.com/cleonte/go-ipcalc
+    homepage: https://gitlab.com/ipcalc/go-ipcalc
     license: GPL-2.0-only
     description: IPv4/IPv6 network calculator, a Go port of ipcalc
     bindir: /usr/bin
@@ -64,9 +64,16 @@ nfpms:
 changelog:
   use: git
 
+# The release assets are uploaded to the project's generic package registry
+# (packages/generic/ipcalc/<version>/<file>) and linked from the release. In CI
+# GITLAB_TOKEN is CI_JOB_TOKEN, which use_job_token tells GoReleaser about.
+gitlab_urls:
+  use_job_token: true
+  use_package_registry: true
+
 release:
-  github:
-    owner: cleonte
+  gitlab:
+    owner: ipcalc
     name: go-ipcalc
   draft: false
   mode: replace

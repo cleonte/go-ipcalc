@@ -1,55 +1,18 @@
 name: test
 
+# GitHub is a read-only mirror of https://gitlab.com/ipcalc/go-ipcalc. The
+# GitLab pipeline runs everything else; this job only adds macOS.
 on:
   push:
     branches: [master]
-  pull_request:
+    tags: ['v*']
 
 jobs:
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash
+  test-macos:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version: '1.27.x'
-      - name: gofmt
-        run: test -z "$(gofmt -l .)"
-      - run: go vet ./...
-      - run: go test -race -coverprofile=coverage.out ./...
-      - name: coverage
-        run: go tool cover -func=coverage.out | tail -1
-
-  # the oldest Go that go.mod allows
-  test-min-go:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
       - run: go test ./...
-
-  checks:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          go-version: '1.27.x'
-      - uses: golangci/golangci-lint-action@v9
-        with:
-          version: v2.15.0
-      - name: govulncheck
-        run: go tool govulncheck ./...
-      - name: generated files are up to date
-        run: |
-          go generate ./...
-          git diff --exit-code

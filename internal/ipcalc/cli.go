@@ -25,11 +25,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cleonte/go-ipcalc/internal/getopt"
+	"gitlab.com/ipcalc/go-ipcalc/internal/getopt"
 )
 
 // version is set at build time:
-// -ldflags "-X github.com/cleonte/go-ipcalc/internal/ipcalc.version=0.1.4".
+// -ldflags "-X gitlab.com/ipcalc/go-ipcalc/internal/ipcalc.version=0.1.4".
 // Without it, the module version of the build (go install) or "dev" is used.
 var version string
 

@@ -18,7 +18,7 @@ package main
 import (
 	"os"
 
-	"github.com/cleonte/go-ipcalc/internal/ipcalc"
+	"gitlab.com/ipcalc/go-ipcalc/internal/ipcalc"
 )
 
 func main() { os.Exit(ipcalc.Main()) }

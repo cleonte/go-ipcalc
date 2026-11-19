@@ -3,3 +3,4 @@
 /ipcalc-go
 /ipcalc-geo-go
 /dist/
+.cache/

@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cleonte/go-ipcalc/internal/u128"
+	"gitlab.com/ipcalc/go-ipcalc/internal/u128"
 )
 
 func isSpace(c byte) bool {

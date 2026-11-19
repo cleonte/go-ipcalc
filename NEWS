@@ -1,3 +1,10 @@
+* go-ipcalc 0.2.0 (unreleased)
+- The project moved to https://gitlab.com/ipcalc/go-ipcalc. The Go module
+  path is now gitlab.com/ipcalc/go-ipcalc: update imports and use
+  "go install gitlab.com/ipcalc/go-ipcalc/cmd/ipcalc@latest".
+- Releases are published on GitLab, built by the GitLab pipeline. The GitHub
+  repository is a read-only mirror. No change in behavior.
+
 * go-ipcalc 0.1.5 (released 2026-11-18)
 - Releases are built with GoReleaser and include .deb, .rpm and .apk
   packages (package go-ipcalc, which conflicts with the distribution's

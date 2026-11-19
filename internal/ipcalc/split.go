@@ -35,7 +35,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cleonte/go-ipcalc/internal/u128"
+	"gitlab.com/ipcalc/go-ipcalc/internal/u128"
 )
 
 type splitReq struct {
