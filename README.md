@@ -1,3 +1,5 @@
+<img src="doc/logo/go-ipcalc.png" alt="go-ipcalc logo" width="128" align="right">
+
 # go-ipcalc
 
 [![pipeline](https://gitlab.com/ipcalc/go-ipcalc/badges/master/pipeline.svg)](https://gitlab.com/ipcalc/go-ipcalc/-/pipelines) [![Release](https://gitlab.com/ipcalc/go-ipcalc/-/badges/release.svg)](https://gitlab.com/ipcalc/go-ipcalc/-/releases) [![Go Reference](https://pkg.go.dev/badge/gitlab.com/ipcalc/go-ipcalc.svg)](https://pkg.go.dev/gitlab.com/ipcalc/go-ipcalc) [![License: GPL-2.0](https://img.shields.io/badge/license-GPL--2.0-blue.svg)](COPYING)
@@ -113,3 +115,8 @@ Inc.; (c) 2026 Nikos Mavrogiannopoulos and the other ipcalc authors.
 (c) 2003-2016 Simon Ekstrand, 2010-2016 Joachim Nilsson, 2016 Nikos
 Mavrogiannopoulos. This is an independent port, not an official part of the
 ipcalc project.
+
+## Logo
+
+The logo's gopher is the Go gopher by Renée French, licensed under CC BY 4.0;
+see `doc/logo/ATTRIBUTION`.
